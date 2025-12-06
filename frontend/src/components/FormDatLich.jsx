@@ -32,7 +32,14 @@ export default function FormDatLich({ onSuccess }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/lichkham', form);
+      // Convert frontend form fields to backend expected format (PascalCase)
+      const payload = {
+        MaBacSi: parseInt(form.maBacSi),
+        MaPhong: parseInt(form.maPhong),
+        NgayKham: form.ngayKham,
+        GhiChu: form.ghiChu || null
+      };
+      await api.post('/lichkham', payload);
       toast.success('Đặt lịch khám thành công!');
       setForm({ maBacSi: '', maPhong: '', ngayKham: '', ghiChu: '' });
       if (onSuccess) onSuccess();
