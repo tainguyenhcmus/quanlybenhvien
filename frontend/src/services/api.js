@@ -1,7 +1,17 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+// Railway backend URL - Replace with your actual Railway backend URL
+// Get this from: Railway → Backend Service → Settings → Networking → Domain
+const RAILWAY_BACKEND_URL = 'quanlybenhvien-production-f8ea.up.railway.app';
+
+// Use VITE_API_URL if set, otherwise use Railway URL in production, localhost in dev
+const API_BASE = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? RAILWAY_BACKEND_URL : 'http://localhost:5050/api');
+
 const api = axios.create({ baseURL: API_BASE, timeout: 10000 });
+
+// Log API base for debugging
+console.log('🌐 API Base URL:', API_BASE);
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
