@@ -5,7 +5,8 @@ import MedicalRecord from '../components/MedicalRecord';
 import { 
   FaShieldAlt, FaCalendarAlt, FaUsers, FaUserMd, FaCheckCircle, FaTimesCircle, 
   FaSync, FaChartLine, FaUser, FaHospital, FaEdit, FaTrash, FaPlus,
-  FaUserFriends, FaStethoscope, FaFileMedical
+  FaUserFriends, FaStethoscope, FaFileMedical, FaDollarSign, FaClock,
+  FaExclamationTriangle, FaArrowUp, FaArrowDown
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
@@ -195,41 +196,219 @@ export default function QuanLy(){
         </div>
 
         {activeTab === 'dashboard' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Tổng lịch khám</p>
-                  <p className="text-3xl font-bold text-gray-800">{lich.length}</p>
+          <div className="space-y-6">
+            {/* Stat Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Tổng lịch khám</p>
+                    <p className="text-3xl font-bold text-gray-800">{lich.length}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {lich.filter(l => new Date(l.NgayKham) >= new Date()).length} sắp tới
+                    </p>
+                  </div>
+                  <FaCalendarAlt className="text-4xl text-blue-500 opacity-20" />
                 </div>
-                <FaCalendarAlt className="text-4xl text-blue-500 opacity-20" />
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Bệnh nhân</p>
+                    <p className="text-3xl font-bold text-gray-800">{patients.length}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {users.filter(u => u.MaChucVu === 4).length} tài khoản
+                    </p>
+                  </div>
+                  <FaUserFriends className="text-4xl text-green-500 opacity-20" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Bác sĩ</p>
+                    <p className="text-3xl font-bold text-gray-800">{doctors.length}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {users.filter(u => u.MaChucVu === 2).length} tài khoản
+                    </p>
+                  </div>
+                  <FaStethoscope className="text-4xl text-purple-500 opacity-20" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-orange-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Hồ sơ bệnh án</p>
+                    <p className="text-3xl font-bold text-gray-800">{hoSo.length}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {lich.filter(l => l.TrangThai === 'Đã khám' || l.TrangThai === 'Hoàn thành').length} đã khám
+                    </p>
+                  </div>
+                  <FaFileMedical className="text-4xl text-orange-500 opacity-20" />
+                </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Bệnh nhân</p>
-                  <p className="text-3xl font-bold text-gray-800">{patients.length}</p>
+
+            {/* Additional Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Lịch đã đặt</p>
+                    <p className="text-3xl font-bold text-gray-800">
+                      {lich.filter(l => l.TrangThai === 'Đã đặt').length}
+                    </p>
+                  </div>
+                  <FaClock className="text-4xl text-yellow-500 opacity-20" />
                 </div>
-                <FaUserFriends className="text-4xl text-green-500 opacity-20" />
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Lịch đã hủy</p>
+                    <p className="text-3xl font-bold text-gray-800">
+                      {lich.filter(l => l.TrangThai === 'Đã hủy' || l.TrangThai === 'Hủy').length}
+                    </p>
+                  </div>
+                  <FaTimesCircle className="text-4xl text-red-500 opacity-20" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-emerald-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Đã hoàn thành</p>
+                    <p className="text-3xl font-bold text-gray-800">
+                      {lich.filter(l => l.TrangThai === 'Hoàn thành' || l.TrangThai === 'Đã khám').length}
+                    </p>
+                  </div>
+                  <FaCheckCircle className="text-4xl text-emerald-500 opacity-20" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-indigo-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Tổng tài khoản</p>
+                    <p className="text-3xl font-bold text-gray-800">{users.length}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {users.filter(u => u.MaChucVu === 3).length} nhân viên
+                    </p>
+                  </div>
+                  <FaUsers className="text-4xl text-indigo-500 opacity-20" />
+                </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Bác sĩ</p>
-                  <p className="text-3xl font-bold text-gray-800">{doctors.length}</p>
+
+            {/* Charts and Lists Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Appointment Status Breakdown */}
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaChartLine className="text-purple-600" />
+                  Phân bổ trạng thái lịch khám
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    { status: 'Đã đặt', count: lich.filter(l => l.TrangThai === 'Đã đặt').length, color: 'bg-yellow-500' },
+                    { status: 'Đã khám', count: lich.filter(l => l.TrangThai === 'Đã khám').length, color: 'bg-blue-500' },
+                    { status: 'Hoàn thành', count: lich.filter(l => l.TrangThai === 'Hoàn thành').length, color: 'bg-green-500' },
+                    { status: 'Đã hủy', count: lich.filter(l => l.TrangThai === 'Đã hủy' || l.TrangThai === 'Hủy').length, color: 'bg-red-500' }
+                  ].map(item => {
+                    const percentage = lich.length > 0 ? (item.count / lich.length * 100).toFixed(1) : 0;
+                    return (
+                      <div key={item.status}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium text-gray-700">{item.status}</span>
+                          <span className="text-sm font-bold text-gray-800">{item.count} ({percentage}%)</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div 
+                            className={`${item.color} h-2.5 rounded-full transition-all`}
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <FaStethoscope className="text-4xl text-purple-500 opacity-20" />
+              </div>
+
+              {/* Upcoming Appointments */}
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaClock className="text-blue-600" />
+                  Lịch khám sắp tới
+                </h3>
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {lich
+                    .filter(l => {
+                      const date = new Date(l.NgayKham);
+                      return date >= new Date() && (l.TrangThai === 'Đã đặt' || l.TrangThai === 'Đã xác nhận');
+                    })
+                    .sort((a, b) => new Date(a.NgayKham) - new Date(b.NgayKham))
+                    .slice(0, 5)
+                    .map(appointment => (
+                      <div key={appointment.MaLich} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800 text-sm">
+                            {appointment.TenBenhNhan || 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {appointment.TenBacSi || 'N/A'} • {appointment.TenPhong || 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(appointment.NgayKham).toLocaleString('vi-VN')}
+                          </p>
+                        </div>
+                        <div className="ml-3">
+                          {getStatusBadge(appointment.TrangThai)}
+                        </div>
+                      </div>
+                    ))}
+                  {lich.filter(l => {
+                    const date = new Date(l.NgayKham);
+                    return date >= new Date() && (l.TrangThai === 'Đã đặt' || l.TrangThai === 'Đã xác nhận');
+                  }).length === 0 && (
+                    <p className="text-center text-gray-500 py-8">Không có lịch khám sắp tới</p>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-orange-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Hồ sơ bệnh án</p>
-                  <p className="text-3xl font-bold text-gray-800">{hoSo.length}</p>
-                </div>
-                <FaFileMedical className="text-4xl text-orange-500 opacity-20" />
+
+            {/* Recent Activity */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <FaCalendarAlt className="text-green-600" />
+                Lịch khám gần đây
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Mã</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Bệnh nhân</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Bác sĩ</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Ngày giờ</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {lich
+                      .sort((a, b) => new Date(b.NgayKham) - new Date(a.NgayKham))
+                      .slice(0, 10)
+                      .map(appointment => (
+                        <tr key={appointment.MaLich} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-mono text-gray-600">#{appointment.MaLich}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{appointment.TenBenhNhan || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{appointment.TenBacSi || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{new Date(appointment.NgayKham).toLocaleString('vi-VN')}</td>
+                          <td className="px-4 py-3">{getStatusBadge(appointment.TrangThai)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                {lich.length === 0 && (
+                  <p className="text-center text-gray-500 py-8">Chưa có lịch khám nào</p>
+                )}
               </div>
             </div>
           </div>
