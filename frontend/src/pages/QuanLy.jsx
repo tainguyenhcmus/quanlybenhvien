@@ -1,0 +1,579 @@
+import React, { useEffect, useState } from 'react';
+import api from '../services/api';
+import TableDanhSach from '../components/TableDanhSach';
+import MedicalRecord from '../components/MedicalRecord';
+import { 
+  FaShieldAlt, FaCalendarAlt, FaUsers, FaUserMd, FaCheckCircle, FaTimesCircle, 
+  FaSync, FaChartLine, FaUser, FaHospital, FaEdit, FaTrash, FaPlus,
+  FaUserFriends, FaStethoscope, FaFileMedical
+} from 'react-icons/fa';
+import { toast } from 'react-toastify';
+
+export default function QuanLy(){
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [lich, setLich] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [hoSo, setHoSo] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(null);
+  const [showDoctorModal, setShowDoctorModal] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState(null);
+  const [doctorForm, setDoctorForm] = useState({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
+  const [selectedHoSo, setSelectedHoSo] = useState(null);
+  const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
+
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
+      const [lichRes, usersRes, doctorsRes, patientsRes, hoSoRes] = await Promise.all([
+        api.get('/lichkham'),
+        api.get('/auth/users'),
+        api.get('/bacsi'),
+        api.get('/benhnhan'),
+        api.get('/hosobenhan')
+      ]);
+      setLich(lichRes.data);
+      setUsers(usersRes.data);
+      setDoctors(doctorsRes.data);
+      setPatients(patientsRes.data);
+      setHoSo(hoSoRes.data);
+    } catch(e) {
+      console.error('Error loading data:', e);
+      toast.error('Không thể tải dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (maLich, trangThai) => {
+    try {
+      setUpdating(maLich);
+      await api.put(`/lichkham/${maLich}/trangthai`, { TrangThai: trangThai });
+      toast.success('Đã cập nhật trạng thái thành công');
+      await loadAllData();
+    } catch(err) {
+      toast.error(err?.response?.data?.message || 'Cập nhật thất bại');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleDeleteDoctor = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bác sĩ này?')) return;
+    try {
+      await api.delete(`/bacsi/${id}`);
+      toast.success('Xóa bác sĩ thành công');
+      await loadAllData();
+    } catch(err) {
+      toast.error(err?.response?.data?.message || 'Xóa thất bại');
+    }
+  };
+
+  const handleSaveDoctor = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingDoctor) {
+        await api.put(`/bacsi/${editingDoctor.MaBacSi}`, doctorForm);
+        toast.success('Cập nhật bác sĩ thành công');
+      } else {
+        await api.post('/bacsi', doctorForm);
+        toast.success('Thêm bác sĩ thành công');
+      }
+      setShowDoctorModal(false);
+      setEditingDoctor(null);
+      setDoctorForm({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
+      setShowCustomSpecialty(false);
+      await loadAllData();
+    } catch(err) {
+      toast.error(err?.response?.data?.message || 'Thao tác thất bại');
+    }
+  };
+
+  const handleEditDoctor = (doctor) => {
+    setEditingDoctor(doctor);
+    const chuyenKhoa = doctor.ChuyenKhoa || '';
+    const specialtyOptions = [
+      'Tim mạch', 'Nội khoa', 'Ngoại khoa', 'Nhi khoa', 'Sản phụ khoa',
+      'Da liễu', 'Mắt', 'Tai mũi họng', 'Răng hàm mặt', 'Thần kinh',
+      'Tâm thần', 'Ung bướu', 'Y học cổ truyền', 'Phục hồi chức năng',
+      'Gây mê hồi sức', 'Chẩn đoán hình ảnh', 'Xét nghiệm', 'Dược'
+    ];
+    setShowCustomSpecialty(chuyenKhoa && !specialtyOptions.includes(chuyenKhoa));
+    setDoctorForm({
+      hoTen: doctor.HoTen || '',
+      chuyenKhoa: chuyenKhoa,
+      bacSiCode: doctor.BacSiCode || '',
+      sdt: doctor.SDT || '',
+      email: doctor.Email || ''
+    });
+    setShowDoctorModal(true);
+  };
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      'Chờ xác nhận': 'bg-yellow-100 text-yellow-800',
+      'Đã xác nhận': 'bg-blue-100 text-blue-800',
+      'Hoàn thành': 'bg-green-100 text-green-800',
+      'Hủy': 'bg-red-100 text-red-800'
+    };
+    const className = statusMap[status] || 'bg-gray-100 text-gray-800';
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${className}`}>
+        {status || 'Chưa xác định'}
+      </span>
+    );
+  };
+
+  const getRoleBadge = (role) => {
+    const roleMap = {
+      1: { text: 'Quản lý', color: 'bg-purple-100 text-purple-800' },
+      2: { text: 'Bác sĩ', color: 'bg-blue-100 text-blue-800' },
+      3: { text: 'Nhân viên', color: 'bg-gray-100 text-gray-800' },
+      4: { text: 'Bệnh nhân', color: 'bg-green-100 text-green-800' }
+    };
+    const roleInfo = roleMap[role] || { text: 'Không xác định', color: 'bg-gray-100 text-gray-800' };
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${roleInfo.color}`}>
+        {roleInfo.text}
+      </span>
+    );
+  };
+
+  const tabs = [
+    { id: 'dashboard', label: 'Tổng quan', icon: FaChartLine },
+    { id: 'appointments', label: 'Lịch khám', icon: FaCalendarAlt },
+    { id: 'records', label: 'Hồ sơ bệnh án', icon: FaFileMedical },
+    { id: 'users', label: 'Tài khoản', icon: FaUser },
+    { id: 'doctors', label: 'Bác sĩ', icon: FaStethoscope },
+    { id: 'patients', label: 'Bệnh nhân', icon: FaUserFriends }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-8">
+      <div className="container">
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg">
+              <FaShieldAlt className="text-white text-2xl" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">Bảng quản trị</h1>
+              <p className="text-gray-600">Quản lý toàn bộ hệ thống</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 mb-6">
+          <div className="flex border-b border-gray-200 overflow-x-auto">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSelectedHoSo(null);
+                  }}
+                  className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-2 whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'border-purple-600 text-purple-600 bg-purple-50'
+                      : 'border-transparent text-gray-600 hover:text-purple-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {activeTab === 'dashboard' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Tổng lịch khám</p>
+                  <p className="text-3xl font-bold text-gray-800">{lich.length}</p>
+                </div>
+                <FaCalendarAlt className="text-4xl text-blue-500 opacity-20" />
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Bệnh nhân</p>
+                  <p className="text-3xl font-bold text-gray-800">{patients.length}</p>
+                </div>
+                <FaUserFriends className="text-4xl text-green-500 opacity-20" />
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Bác sĩ</p>
+                  <p className="text-3xl font-bold text-gray-800">{doctors.length}</p>
+                </div>
+                <FaStethoscope className="text-4xl text-purple-500 opacity-20" />
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-orange-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Hồ sơ bệnh án</p>
+                  <p className="text-3xl font-bold text-gray-800">{hoSo.length}</p>
+                </div>
+                <FaFileMedical className="text-4xl text-orange-500 opacity-20" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'appointments' && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Quản lý lịch khám</h2>
+            {loading ? (
+              <div className="text-center py-12">
+                <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-4 text-gray-500">Đang tải dữ liệu...</p>
+              </div>
+            ) : (
+              <TableDanhSach
+                columns={[
+                  { key:'MaLich', title:'Mã', render: r => <span className="font-mono text-sm">#{r.MaLich}</span> },
+                  { key:'NgayKham', title:'Ngày giờ', render: r => new Date(r.NgayKham).toLocaleString('vi-VN') },
+                  { key:'TenBenhNhan', title:'Bệnh nhân', render: r => r.TenBenhNhan || '-' },
+                  { key:'TenBacSi', title:'Bác sĩ', render: r => r.TenBacSi || '-' },
+                  { key:'TrangThai', title:'Trạng thái', render: r => getStatusBadge(r.TrangThai) }
+                ]}
+                data={lich}
+                actions={(row) => (
+                  <div className="flex gap-2">
+                    {row.TrangThai !== 'Hoàn thành' && row.TrangThai !== 'Hủy' && (
+                      <button
+                        onClick={() => updateStatus(row.MaLich, 'Hoàn thành')}
+                        disabled={updating === row.MaLich}
+                        className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                      >
+                        {updating === row.MaLich ? '...' : 'Hoàn thành'}
+                      </button>
+                    )}
+                    {row.TrangThai !== 'Hủy' && (
+                      <button
+                        onClick={() => updateStatus(row.MaLich, 'Hủy')}
+                        disabled={updating === row.MaLich}
+                        className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                      >
+                        Hủy
+                      </button>
+                    )}
+                  </div>
+                )}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'records' && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center">
+                  <FaFileMedical className="text-white text-xl" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Quản lý hồ sơ bệnh án</h2>
+              </div>
+            </div>
+            {selectedHoSo ? (
+              <div className="space-y-4">
+                <MedicalRecord 
+                  maLich={selectedHoSo.MaLich} 
+                  maBenhNhan={selectedHoSo.MaBenhNhan}
+                  canEdit={true}
+                  onUpdate={() => {
+                    loadAllData();
+                    setSelectedHoSo(null);
+                  }}
+                />
+                <button
+                  onClick={() => setSelectedHoSo(null)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
+                >
+                  ← Quay lại danh sách
+                </button>
+              </div>
+            ) : (
+              <TableDanhSach
+                columns={[
+                  { key:'MaHoSo', title:'Mã', render: r => <span className="font-mono text-sm">#{r.MaHoSo}</span> },
+                  { key:'NgayKham', title:'Ngày khám', render: r => new Date(r.NgayKham).toLocaleString('vi-VN') },
+                  { key:'TenBenhNhan', title:'Bệnh nhân', render: r => r.TenBenhNhan || '-' },
+                  { key:'TenBacSi', title:'Bác sĩ', render: r => r.TenBacSi || '-' },
+                  { key:'ChanDoan', title:'Chẩn đoán', render: r => <span className="line-clamp-1">{r.ChanDoan || '-'}</span> }
+                ]}
+                data={hoSo}
+                actions={(row) => (
+                  <button
+                    onClick={() => setSelectedHoSo(row)}
+                    className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all"
+                  >
+                    Xem chi tiết
+                  </button>
+                )}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Quản lý tài khoản</h2>
+            {loading ? (
+              <div className="text-center py-12">
+                <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-4 text-gray-500">Đang tải dữ liệu...</p>
+              </div>
+            ) : (
+              <TableDanhSach
+                columns={[
+                  { key:'MaTaiKhoan', title:'Mã', render: r => <span className="font-mono text-sm">#{r.MaTaiKhoan}</span> },
+                  { key:'TenDangNhap', title:'Tên đăng nhập', render: r => <span className="font-medium">{r.TenDangNhap}</span> },
+                  { key:'HoTen', title:'Họ tên', render: r => r.HoTen || '-' },
+                  { key:'Email', title:'Email', render: r => r.Email || '-' },
+                  { key:'MaChucVu', title:'Vai trò', render: r => getRoleBadge(r.MaChucVu) }
+                ]}
+                data={users}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'doctors' && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Quản lý bác sĩ</h2>
+              <button
+                onClick={() => {
+                  setEditingDoctor(null);
+                  setDoctorForm({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
+                  setShowCustomSpecialty(false);
+                  setShowDoctorModal(true);
+                }}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+              >
+                <FaPlus />
+                <span>Thêm bác sĩ</span>
+              </button>
+            </div>
+            {loading ? (
+              <div className="text-center py-12">
+                <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-4 text-gray-500">Đang tải dữ liệu...</p>
+              </div>
+            ) : (
+              <TableDanhSach
+                columns={[
+                  { key:'MaBacSi', title:'Mã', render: r => <span className="font-mono text-sm">#{r.MaBacSi}</span> },
+                  { key:'HoTen', title:'Họ tên', render: r => <span className="font-medium">{r.HoTen}</span> },
+                  { key:'ChuyenKhoa', title:'Chuyên khoa', render: r => r.ChuyenKhoa || '-' },
+                  { key:'BacSiCode', title:'Mã bác sĩ', render: r => r.BacSiCode || '-' },
+                  { key:'SDT', title:'SĐT', render: r => r.SDT || '-' },
+                  { key:'Email', title:'Email', render: r => r.Email || '-' }
+                ]}
+                data={doctors}
+                actions={(row)=>(
+                  <div className="flex gap-2">
+                    <button 
+                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-1"
+                      onClick={() => handleEditDoctor(row)}
+                    >
+                      <FaEdit />
+                      <span>Sửa</span>
+                    </button>
+                    <button 
+                      className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-1"
+                      onClick={() => handleDeleteDoctor(row.MaBacSi)}
+                    >
+                      <FaTrash />
+                      <span>Xóa</span>
+                    </button>
+                  </div>
+                )}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'patients' && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Quản lý bệnh nhân</h2>
+            {loading ? (
+              <div className="text-center py-12">
+                <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-4 text-gray-500">Đang tải dữ liệu...</p>
+              </div>
+            ) : (
+              <TableDanhSach
+                columns={[
+                  { key:'MaBenhNhan', title:'Mã', render: r => <span className="font-mono text-sm">#{r.MaBenhNhan}</span> },
+                  { key:'HoTen', title:'Họ tên', render: r => <span className="font-medium">{r.HoTen}</span> },
+                  { key:'SDT', title:'SĐT', render: r => r.SDT || '-' },
+                  { key:'Email', title:'Email', render: r => r.Email || '-' },
+                  { key:'NgayDangKy', title:'Ngày đăng ký', render: r => new Date(r.NgayDangKy).toLocaleDateString('vi-VN') }
+                ]}
+                data={patients}
+              />
+            )}
+          </div>
+        )}
+
+        {showDoctorModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                {editingDoctor ? 'Sửa thông tin bác sĩ' : 'Thêm bác sĩ mới'}
+              </h3>
+              <form onSubmit={handleSaveDoctor} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Họ tên *</label>
+                  <input
+                    type="text"
+                    value={doctorForm.hoTen}
+                    onChange={e => setDoctorForm({...doctorForm, hoTen: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-600 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Chuyên khoa</label>
+                  {showCustomSpecialty ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Nhập chuyên khoa..."
+                        value={doctorForm.chuyenKhoa}
+                        onChange={e => setDoctorForm({...doctorForm, chuyenKhoa: e.target.value})}
+                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-600 outline-none"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCustomSpecialty(false);
+                          setDoctorForm({...doctorForm, chuyenKhoa: ''});
+                        }}
+                        className="text-sm text-purple-600 hover:text-purple-700"
+                      >
+                        ← Chọn từ danh sách
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={doctorForm.chuyenKhoa}
+                      onChange={e => {
+                        if (e.target.value === 'Khác') {
+                          setShowCustomSpecialty(true);
+                          setDoctorForm({...doctorForm, chuyenKhoa: ''});
+                        } else {
+                          setDoctorForm({...doctorForm, chuyenKhoa: e.target.value});
+                        }
+                      }}
+                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-600 outline-none bg-white"
+                    >
+                      <option value="">-- Chọn chuyên khoa --</option>
+                      <option value="Tim mạch">Tim mạch</option>
+                      <option value="Nội khoa">Nội khoa</option>
+                      <option value="Ngoại khoa">Ngoại khoa</option>
+                      <option value="Nhi khoa">Nhi khoa</option>
+                      <option value="Sản phụ khoa">Sản phụ khoa</option>
+                      <option value="Da liễu">Da liễu</option>
+                      <option value="Mắt">Mắt</option>
+                      <option value="Tai mũi họng">Tai mũi họng</option>
+                      <option value="Răng hàm mặt">Răng hàm mặt</option>
+                      <option value="Thần kinh">Thần kinh</option>
+                      <option value="Tâm thần">Tâm thần</option>
+                      <option value="Ung bướu">Ung bướu</option>
+                      <option value="Y học cổ truyền">Y học cổ truyền</option>
+                      <option value="Phục hồi chức năng">Phục hồi chức năng</option>
+                      <option value="Gây mê hồi sức">Gây mê hồi sức</option>
+                      <option value="Chẩn đoán hình ảnh">Chẩn đoán hình ảnh</option>
+                      <option value="Xét nghiệm">Xét nghiệm</option>
+                      <option value="Dược">Dược</option>
+                      <option value="Khác">Khác...</option>
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Mã bác sĩ</label>
+                  <input
+                    type="text"
+                    value={doctorForm.bacSiCode}
+                    onChange={e => setDoctorForm({...doctorForm, bacSiCode: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-600 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">SĐT</label>
+                  <input
+                    type="tel"
+                    value={doctorForm.sdt}
+                    onChange={e => setDoctorForm({...doctorForm, sdt: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-600 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={doctorForm.email}
+                    onChange={e => setDoctorForm({...doctorForm, email: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-600 outline-none"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all"
+                  >
+                    {editingDoctor ? 'Cập nhật' : 'Thêm mới'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDoctorModal(false);
+                      setEditingDoctor(null);
+                      setDoctorForm({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
+                      setShowCustomSpecialty(false);
+                    }}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

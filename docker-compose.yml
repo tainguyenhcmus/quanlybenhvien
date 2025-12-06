@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: benhvien-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: QuanLyBenhVien
+      MYSQL_USER: benhvien_user
+      MYSQL_PASSWORD: benhvien_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./newsql.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - benhvien-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: benhvien-backend
+    restart: always
+    environment:
+      PORT: 5050
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_USER: benhvien_user
+      DB_PASSWORD: benhvien_password
+      DB_DATABASE: QuanLyBenhVien
+      DB_PORT: 3306
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+    ports:
+      - "5050:5050"
+    depends_on:
+      - mysql
+    networks:
+      - benhvien-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: benhvien-frontend
+    restart: always
+    environment:
+      VITE_API_URL: http://localhost:5050
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - benhvien-network
+
+volumes:
+  mysql_data:
+
+networks:
+  benhvien-network:
+    driver: bridge
+

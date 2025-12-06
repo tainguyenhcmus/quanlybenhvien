@@ -1,0 +1,24 @@
+{
+  "watch": [
+    "server.js",
+    "routes",
+    "controllers",
+    "middleware",
+    "db.js"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules",
+    "*.test.js",
+    "*.spec.js",
+    "test-connect.js",
+    "hash-update.js",
+    "users.json"
+  ],
+  "exec": "node server.js",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 500
+}
+
