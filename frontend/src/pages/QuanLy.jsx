@@ -195,7 +195,7 @@ export default function QuanLy(){
                     setActiveTab(tab.id);
                     setSelectedHoSo(null);
                   }}
-                  className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-3 whitespace-nowrap relative ${
+                  className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-2 whitespace-nowrap relative ${
                     activeTab === tab.id
                       ? 'border-purple-600 text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg'
                       : 'border-transparent text-gray-700 hover:text-purple-600 hover:bg-white/50'
@@ -383,6 +383,7 @@ export default function QuanLy(){
                     );
                   })}
                 </div>
+                </div>
               </div>
 
               {/* Upcoming Appointments */}
@@ -428,6 +429,7 @@ export default function QuanLy(){
                     <p className="text-center text-gray-500 py-8">Không có lịch khám sắp tới</p>
                   )}
                 </div>
+                </div>
               </div>
             </div>
 
@@ -441,7 +443,7 @@ export default function QuanLy(){
                   </div>
                   Lịch khám gần đây
                 </h3>
-              <div className="overflow-x-auto">
+                <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
@@ -470,6 +472,7 @@ export default function QuanLy(){
                 {lich.length === 0 && (
                   <p className="text-center text-gray-500 py-8">Chưa có lịch khám nào</p>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -527,6 +530,7 @@ export default function QuanLy(){
                 )}
               />
             )}
+            </div>
           </div>
         )}
 
