@@ -156,22 +156,36 @@ export default function QuanLy(){
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-8">
-      <div className="container">
+    <div className="min-h-screen relative py-8" style={{
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)',
+      backgroundSize: '400% 400%',
+      animation: 'gradientShift 15s ease infinite'
+    }}>
+      <style>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+      <div className="container relative z-10">
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg">
-              <FaShieldAlt className="text-white text-2xl" />
+          <div className="flex items-center gap-4 mb-2 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/20">
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-600 via-pink-600 to-red-500 rounded-2xl flex items-center justify-center shadow-xl transform hover:scale-110 transition-transform">
+              <FaShieldAlt className="text-white text-3xl" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">Bảng quản trị</h1>
-              <p className="text-gray-600">Quản lý toàn bộ hệ thống</p>
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Bảng quản trị
+              </h1>
+              <p className="text-gray-700 font-medium">Quản lý toàn bộ hệ thống bệnh viện</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 mb-6">
-          <div className="flex border-b border-gray-200 overflow-x-auto">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 mb-6 overflow-hidden">
+          <div className="flex border-b border-gray-200/50 overflow-x-auto bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50">
             {tabs.map(tab => {
               const Icon = tab.icon;
               return (
@@ -181,14 +195,17 @@ export default function QuanLy(){
                     setActiveTab(tab.id);
                     setSelectedHoSo(null);
                   }}
-                  className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-2 whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-3 whitespace-nowrap relative ${
                     activeTab === tab.id
-                      ? 'border-purple-600 text-purple-600 bg-purple-50'
-                      : 'border-transparent text-gray-600 hover:text-purple-600 hover:bg-gray-50'
+                      ? 'border-purple-600 text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg'
+                      : 'border-transparent text-gray-700 hover:text-purple-600 hover:bg-white/50'
                   }`}
                 >
-                  <Icon />
+                  <Icon className={activeTab === tab.id ? 'text-white' : ''} />
                   <span>{tab.label}</span>
+                  {activeTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/50"></div>
+                  )}
                 </button>
               );
             })}
@@ -199,101 +216,133 @@ export default function QuanLy(){
           <div className="space-y-6">
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Tổng lịch khám</p>
-                    <p className="text-3xl font-bold text-gray-800">{lich.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-blue-100 text-sm font-medium mb-1">Tổng lịch khám</p>
+                    <p className="text-4xl font-bold text-white mb-1">{lich.length}</p>
+                    <p className="text-xs text-blue-200 mt-1">
                       {lich.filter(l => new Date(l.NgayKham) >= new Date()).length} sắp tới
                     </p>
                   </div>
-                  <FaCalendarAlt className="text-4xl text-blue-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaCalendarAlt className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Bệnh nhân</p>
-                    <p className="text-3xl font-bold text-gray-800">{patients.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-emerald-100 text-sm font-medium mb-1">Bệnh nhân</p>
+                    <p className="text-4xl font-bold text-white mb-1">{patients.length}</p>
+                    <p className="text-xs text-emerald-200 mt-1">
                       {users.filter(u => u.MaChucVu === 4).length} tài khoản
                     </p>
                   </div>
-                  <FaUserFriends className="text-4xl text-green-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaUserFriends className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-purple-500 via-pink-600 to-rose-700 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Bác sĩ</p>
-                    <p className="text-3xl font-bold text-gray-800">{doctors.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-purple-100 text-sm font-medium mb-1">Bác sĩ</p>
+                    <p className="text-4xl font-bold text-white mb-1">{doctors.length}</p>
+                    <p className="text-xs text-purple-200 mt-1">
                       {users.filter(u => u.MaChucVu === 2).length} tài khoản
                     </p>
                   </div>
-                  <FaStethoscope className="text-4xl text-purple-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaStethoscope className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-orange-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-orange-500 via-amber-600 to-yellow-700 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Hồ sơ bệnh án</p>
-                    <p className="text-3xl font-bold text-gray-800">{hoSo.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-orange-100 text-sm font-medium mb-1">Hồ sơ bệnh án</p>
+                    <p className="text-4xl font-bold text-white mb-1">{hoSo.length}</p>
+                    <p className="text-xs text-orange-200 mt-1">
                       {lich.filter(l => l.TrangThai === 'Đã khám' || l.TrangThai === 'Hoàn thành').length} đã khám
                     </p>
                   </div>
-                  <FaFileMedical className="text-4xl text-orange-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaFileMedical className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Additional Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Lịch đã đặt</p>
-                    <p className="text-3xl font-bold text-gray-800">
+                    <p className="text-yellow-100 text-sm font-medium mb-1">Lịch đã đặt</p>
+                    <p className="text-4xl font-bold text-white">
                       {lich.filter(l => l.TrangThai === 'Đã đặt').length}
                     </p>
                   </div>
-                  <FaClock className="text-4xl text-yellow-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaClock className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-red-500 via-rose-600 to-pink-700 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Lịch đã hủy</p>
-                    <p className="text-3xl font-bold text-gray-800">
+                    <p className="text-red-100 text-sm font-medium mb-1">Lịch đã hủy</p>
+                    <p className="text-4xl font-bold text-white">
                       {lich.filter(l => l.TrangThai === 'Đã hủy' || l.TrangThai === 'Hủy').length}
                     </p>
                   </div>
-                  <FaTimesCircle className="text-4xl text-red-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaTimesCircle className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-emerald-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Đã hoàn thành</p>
-                    <p className="text-3xl font-bold text-gray-800">
+                    <p className="text-emerald-100 text-sm font-medium mb-1">Đã hoàn thành</p>
+                    <p className="text-4xl font-bold text-white">
                       {lich.filter(l => l.TrangThai === 'Hoàn thành' || l.TrangThai === 'Đã khám').length}
                     </p>
                   </div>
-                  <FaCheckCircle className="text-4xl text-emerald-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaCheckCircle className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-indigo-500">
-                <div className="flex items-center justify-between">
+              <div className="relative bg-gradient-to-br from-indigo-500 via-violet-600 to-purple-700 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Tổng tài khoản</p>
-                    <p className="text-3xl font-bold text-gray-800">{users.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-indigo-100 text-sm font-medium mb-1">Tổng tài khoản</p>
+                    <p className="text-4xl font-bold text-white mb-1">{users.length}</p>
+                    <p className="text-xs text-indigo-200 mt-1">
                       {users.filter(u => u.MaChucVu === 3).length} nhân viên
                     </p>
                   </div>
-                  <FaUsers className="text-4xl text-indigo-500 opacity-20" />
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaUsers className="text-3xl text-white" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -301,28 +350,32 @@ export default function QuanLy(){
             {/* Charts and Lists Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Appointment Status Breakdown */}
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <FaChartLine className="text-purple-600" />
-                  Phân bổ trạng thái lịch khám
-                </h3>
+              <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/30 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-full -mr-32 -mt-32"></div>
+                <div className="relative z-10">
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                      <FaChartLine className="text-white" />
+                    </div>
+                    Phân bổ trạng thái lịch khám
+                  </h3>
                 <div className="space-y-4">
                   {[
-                    { status: 'Đã đặt', count: lich.filter(l => l.TrangThai === 'Đã đặt').length, color: 'bg-yellow-500' },
-                    { status: 'Đã khám', count: lich.filter(l => l.TrangThai === 'Đã khám').length, color: 'bg-blue-500' },
-                    { status: 'Hoàn thành', count: lich.filter(l => l.TrangThai === 'Hoàn thành').length, color: 'bg-green-500' },
-                    { status: 'Đã hủy', count: lich.filter(l => l.TrangThai === 'Đã hủy' || l.TrangThai === 'Hủy').length, color: 'bg-red-500' }
+                    { status: 'Đã đặt', count: lich.filter(l => l.TrangThai === 'Đã đặt').length, gradient: 'from-yellow-400 via-amber-500 to-orange-600' },
+                    { status: 'Đã khám', count: lich.filter(l => l.TrangThai === 'Đã khám').length, gradient: 'from-blue-400 via-indigo-500 to-purple-600' },
+                    { status: 'Hoàn thành', count: lich.filter(l => l.TrangThai === 'Hoàn thành').length, gradient: 'from-emerald-400 via-teal-500 to-cyan-600' },
+                    { status: 'Đã hủy', count: lich.filter(l => l.TrangThai === 'Đã hủy' || l.TrangThai === 'Hủy').length, gradient: 'from-red-400 via-rose-500 to-pink-600' }
                   ].map(item => {
                     const percentage = lich.length > 0 ? (item.count / lich.length * 100).toFixed(1) : 0;
                     return (
-                      <div key={item.status}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-gray-700">{item.status}</span>
-                          <span className="text-sm font-bold text-gray-800">{item.count} ({percentage}%)</span>
+                      <div key={item.status} className="p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-semibold text-gray-800">{item.status}</span>
+                          <span className="text-sm font-bold bg-white px-3 py-1 rounded-full shadow-sm">{item.count} ({percentage}%)</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className="w-full bg-white rounded-full h-4 shadow-inner overflow-hidden">
                           <div 
-                            className={`${item.color} h-2.5 rounded-full transition-all`}
+                            className={`bg-gradient-to-r ${item.gradient} h-4 rounded-full transition-all duration-500 shadow-lg`}
                             style={{ width: `${percentage}%` }}
                           ></div>
                         </div>
@@ -333,37 +386,41 @@ export default function QuanLy(){
               </div>
 
               {/* Upcoming Appointments */}
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <FaClock className="text-blue-600" />
-                  Lịch khám sắp tới
-                </h3>
+              <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/30 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full -mr-32 -mt-32"></div>
+                <div className="relative z-10">
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                      <FaClock className="text-white" />
+                    </div>
+                    Lịch khám sắp tới
+                  </h3>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {lich
-                    .filter(l => {
-                      const date = new Date(l.NgayKham);
-                      return date >= new Date() && (l.TrangThai === 'Đã đặt' || l.TrangThai === 'Đã xác nhận');
-                    })
-                    .sort((a, b) => new Date(a.NgayKham) - new Date(b.NgayKham))
-                    .slice(0, 5)
-                    .map(appointment => (
-                      <div key={appointment.MaLich} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {appointment.TenBenhNhan || 'N/A'}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {appointment.TenBacSi || 'N/A'} • {appointment.TenPhong || 'N/A'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(appointment.NgayKham).toLocaleString('vi-VN')}
-                          </p>
+                    {lich
+                      .filter(l => {
+                        const date = new Date(l.NgayKham);
+                        return date >= new Date() && (l.TrangThai === 'Đã đặt' || l.TrangThai === 'Đã xác nhận');
+                      })
+                      .sort((a, b) => new Date(a.NgayKham) - new Date(b.NgayKham))
+                      .slice(0, 5)
+                      .map(appointment => (
+                        <div key={appointment.MaLich} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl hover:from-blue-100 hover:to-cyan-100 transition-all border border-blue-100 shadow-sm">
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800 text-sm mb-1">
+                              {appointment.TenBenhNhan || 'N/A'}
+                            </p>
+                            <p className="text-xs text-gray-600 mb-1">
+                              {appointment.TenBacSi || 'N/A'} • {appointment.TenPhong || 'N/A'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(appointment.NgayKham).toLocaleString('vi-VN')}
+                            </p>
+                          </div>
+                          <div className="ml-3">
+                            {getStatusBadge(appointment.TrangThai)}
+                          </div>
                         </div>
-                        <div className="ml-3">
-                          {getStatusBadge(appointment.TrangThai)}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   {lich.filter(l => {
                     const date = new Date(l.NgayKham);
                     return date >= new Date() && (l.TrangThai === 'Đã đặt' || l.TrangThai === 'Đã xác nhận');
@@ -375,11 +432,15 @@ export default function QuanLy(){
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FaCalendarAlt className="text-green-600" />
-                Lịch khám gần đây
-              </h3>
+            <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-200/30 to-emerald-200/30 rounded-full -mr-32 -mt-32"></div>
+              <div className="relative z-10">
+                <h3 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                    <FaCalendarAlt className="text-white" />
+                  </div>
+                  Lịch khám gần đây
+                </h3>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
@@ -391,13 +452,13 @@ export default function QuanLy(){
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Trạng thái</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200/50">
                     {lich
                       .sort((a, b) => new Date(b.NgayKham) - new Date(a.NgayKham))
                       .slice(0, 10)
-                      .map(appointment => (
-                        <tr key={appointment.MaLich} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-mono text-gray-600">#{appointment.MaLich}</td>
+                      .map((appointment, index) => (
+                        <tr key={appointment.MaLich} className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all">
+                          <td className="px-4 py-3 text-sm font-mono text-gray-600 font-semibold">#{appointment.MaLich}</td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-800">{appointment.TenBenhNhan || '-'}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{appointment.TenBacSi || '-'}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{new Date(appointment.NgayKham).toLocaleString('vi-VN')}</td>
@@ -415,8 +476,15 @@ export default function QuanLy(){
         )}
 
         {activeTab === 'appointments' && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Quản lý lịch khám</h2>
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-200/20 to-pink-200/20 rounded-full -mr-48 -mt-48"></div>
+            <div className="relative z-10">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                <FaCalendarAlt className="text-white text-xl" />
+              </div>
+              Quản lý lịch khám
+            </h2>
             {loading ? (
               <div className="text-center py-12">
                 <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -463,13 +531,15 @@ export default function QuanLy(){
         )}
 
         {activeTab === 'records' && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-200/20 to-purple-200/20 rounded-full -mr-48 -mt-48"></div>
+            <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center">
+                <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-xl">
                   <FaFileMedical className="text-white text-xl" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800">Quản lý hồ sơ bệnh án</h2>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Quản lý hồ sơ bệnh án</h2>
               </div>
             </div>
             {selectedHoSo ? (
@@ -510,12 +580,20 @@ export default function QuanLy(){
                 )}
               />
             )}
+            </div>
           </div>
         )}
 
         {activeTab === 'users' && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Quản lý tài khoản</h2>
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/20 to-cyan-200/20 rounded-full -mr-48 -mt-48"></div>
+            <div className="relative z-10">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-6 flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                <FaUser className="text-white text-xl" />
+              </div>
+              Quản lý tài khoản
+            </h2>
             {loading ? (
               <div className="text-center py-12">
                 <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -536,13 +614,21 @@ export default function QuanLy(){
                 data={users}
               />
             )}
+            </div>
           </div>
         )}
 
         {activeTab === 'doctors' && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-200/20 to-pink-200/20 rounded-full -mr-48 -mt-48"></div>
+            <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Quản lý bác sĩ</h2>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <FaStethoscope className="text-white text-xl" />
+                </div>
+                Quản lý bác sĩ
+              </h2>
               <button
                 onClick={() => {
                   setEditingDoctor(null);
@@ -550,7 +636,7 @@ export default function QuanLy(){
                   setShowCustomSpecialty(false);
                   setShowDoctorModal(true);
                 }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <FaPlus />
                 <span>Thêm bác sĩ</span>
@@ -595,12 +681,20 @@ export default function QuanLy(){
                 )}
               />
             )}
+            </div>
           </div>
         )}
 
         {activeTab === 'patients' && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Quản lý bệnh nhân</h2>
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-green-200/20 to-emerald-200/20 rounded-full -mr-48 -mt-48"></div>
+            <div className="relative z-10">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-6 flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                <FaUserFriends className="text-white text-xl" />
+              </div>
+              Quản lý bệnh nhân
+            </h2>
             {loading ? (
               <div className="text-center py-12">
                 <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -621,6 +715,7 @@ export default function QuanLy(){
                 data={patients}
               />
             )}
+            </div>
           </div>
         )}
 
