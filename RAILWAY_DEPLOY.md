@@ -66,6 +66,7 @@ Step-by-step guide to deploy your backend to Railway.
 4. **IMPORTANT:** Click on the service, go to **"Settings"** tab
 5. Set **"Root Directory"** to: `backend`
 6. Set **"Start Command"** to: `npm start` (should be auto-detected)
+7. **IMPORTANT:** In Settings → Build, ensure **"Builder"** is set to **"Nixpacks"** (not Docker)
 
 ### Step 5: Configure Environment Variables
 
@@ -154,13 +155,17 @@ Step-by-step guide to deploy your backend to Railway.
 
 ### Build fails
 
-**Problem:** Build errors during deployment
+**Problem:** Build errors during deployment (e.g., `npm ci --only=production` error)
 
 **Solutions:**
 1. Check build logs in Railway dashboard
 2. Ensure `package.json` has correct `start` script
 3. Verify all dependencies are in `dependencies` (not just `devDependencies`)
 4. Make sure Root Directory is set to `backend`
+5. **If using yarn.lock:** Ensure Railway uses **Nixpacks** builder (not Docker)
+   - Go to Settings → Build → Select "Nixpacks"
+   - Nixpacks will auto-detect `yarn.lock` and use yarn
+6. **If error persists:** The Dockerfile has been renamed to `Dockerfile.backup` to force Nixpacks usage
 
 ### Module not found errors
 

@@ -1,0 +1,11 @@
+# Copy and paste these into Railway Backend Service → Variables tab
+
+DB_HOST=ballast.proxy.rlwy.net
+DB_USER=root
+DB_PASSWORD=LdcGoKHHqIhNATjjVxgOZWnXyccpbSqq
+DB_DATABASE=railway
+DB_PORT=35007
+PORT=5050
+NODE_ENV=production
+JWT_SECRET=CHANGE_THIS_TO_A_RANDOM_32_CHAR_STRING
+
