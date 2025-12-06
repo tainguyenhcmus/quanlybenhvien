@@ -11,6 +11,13 @@ console.log('DB_DATABASE:', process.env.DB_DATABASE ? `✅ Set (${process.env.DB
 console.log('DB_PORT:', process.env.DB_PORT ? `✅ Set (${process.env.DB_PORT})` : '❌ Not set');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'not set');
 
+// Determine if we're connecting to Railway MySQL
+const isRailway = process.env.DB_HOST && (
+  process.env.DB_HOST.includes('railway') || 
+  process.env.DB_HOST.includes('rlwy') ||
+  process.env.DB_HOST.includes('proxy.rlwy')
+);
+
 const config = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -20,13 +27,12 @@ const config = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // Enable SSL for Railway MySQL connections (Railway requires SSL)
-  // Enable SSL if DB_HOST contains 'railway' or 'rlwy' or if explicitly set
-  ssl: (process.env.DB_HOST && (process.env.DB_HOST.includes('railway') || process.env.DB_HOST.includes('rlwy'))) || process.env.DB_SSL === 'true' 
-    ? { rejectUnauthorized: false } 
-    : false,
-  // Connection timeout
-  connectTimeout: 10000,
+  // Railway MySQL REQUIRES SSL - always enable for Railway connections
+  ssl: isRailway ? { 
+    rejectUnauthorized: false 
+  } : false,
+  // Connection timeout (increase for Railway)
+  connectTimeout: isRailway ? 30000 : 10000,
   // Enable keep-alive
   enableKeepAlive: true,
 };
@@ -37,6 +43,8 @@ console.log('📊 MySQL connect config:', {
   database: config.database,
   port: config.port,
   ssl: config.ssl ? 'enabled' : 'disabled',
+  isRailway: isRailway ? 'yes' : 'no',
+  connectTimeout: config.connectTimeout,
 });
 
 const pool = mysql.createPool(config);
@@ -54,6 +62,20 @@ pool.getConnection()
       errno: err.errno,
       sqlState: err.sqlState,
     });
+    
+    // Additional troubleshooting info
+    if (err.code === 'ECONNREFUSED') {
+      console.error('🔍 Troubleshooting ECONNREFUSED:');
+      console.error('1. Check if DB_HOST is correct:', process.env.DB_HOST);
+      console.error('2. Check if DB_PORT is correct:', process.env.DB_PORT);
+      console.error('3. Verify MySQL service is running in Railway');
+      console.error('4. Ensure services are in the same Railway project');
+      console.error('5. Try using Railway private networking (MYSQLHOST variable)');
+    }
+    
+    if (err.code === 'ENOTFOUND') {
+      console.error('🔍 Hostname not found. Check DB_HOST:', process.env.DB_HOST);
+    }
   });
 
 module.exports = pool;
