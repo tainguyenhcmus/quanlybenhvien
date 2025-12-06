@@ -7,6 +7,7 @@ const RAILWAY_BACKEND_URL = 'https://quanlybenhvien-production-f8ea.up.railway.a
 // Use VITE_API_URL if set, otherwise use Railway URL in production, localhost in dev
 const API_BASE = import.meta.env.VITE_API_URL || 
   (import.meta.env.PROD ? RAILWAY_BACKEND_URL : 'http://localhost:5050/api');
+console.log("🚀 ~ API_BASE:", API_BASE)
 
 const api = axios.create({ baseURL: API_BASE, timeout: 10000 });
 
