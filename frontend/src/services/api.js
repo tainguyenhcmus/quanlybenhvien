@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Railway backend URL - Replace with your actual Railway backend URL
 // Get this from: Railway → Backend Service → Settings → Networking → Domain
-const RAILWAY_BACKEND_URL = 'quanlybenhvien-production-f8ea.up.railway.app';
+const RAILWAY_BACKEND_URL = 'https://quanlybenhvien-production-f8ea.up.railway.app/api';
 
 // Use VITE_API_URL if set, otherwise use Railway URL in production, localhost in dev
 const API_BASE = import.meta.env.VITE_API_URL || 
