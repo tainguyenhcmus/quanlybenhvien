@@ -4,6 +4,7 @@ const router = express.Router();
 const auth = require('../middleware/auth.middleware');
 const permit = require('../middleware/role.middleware');
 const controller = require('../controllers/lichkham.controller');
+const datlichChat = require('../controllers/datlichChat.controller');
 const pool = require('../db');
 
 /**
@@ -47,6 +48,13 @@ router.get('/', auth, async (req, res) => {
     res.status(500).json({ message: 'Lỗi server', error: err.message });
   }
 });
+
+/**
+ * POST /api/lichkham/chat-extract
+ * Bệnh nhân: gửi hội thoại + draft, server gọi AI trích xuất MaBacSi, MaPhong, NgayKham, GhiChu.
+ * Body: { messages: { role, content }[], draft?: object }
+ */
+router.post('/chat-extract', auth, permit(4), datlichChat.chatExtract);
 
 /**
  * POST /api/lichkham/

@@ -10,6 +10,10 @@ PORT=5050
 NODE_ENV=production
 JWT_SECRET=CHANGE_THIS_TO_A_RANDOM_32_CHAR_STRING
 
+# OpenAI (trợ lý đặt lịch — POST /api/lichkham/chat-extract)
+# OPENAI_API_KEY=sk-...
+# Optional: OPENAI_MODEL=gpt-4o-mini
+
 # Note: After importing newsql.sql, the database "QuanLyBenhVien" will be created
 # Make sure to import newsql.sql into Railway MySQL before deploying backend
 

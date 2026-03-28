@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth.routes');
 const benhnhanRoutes = require('./routes/benhnhan.routes');
 const bacsiRoutes = require('./routes/bacsi.routes');
 const lichkhamRoutes = require('./routes/lichkham.routes');
+const phongkhamRoutes = require('./routes/phongkham.routes');
 const hoadonRoutes = require('./routes/hoadon.routes');
 const hosobenhanRoutes = require('./routes/hosobenhan.routes');
 
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/benhnhan', benhnhanRoutes);
 app.use('/api/bacsi', bacsiRoutes);
 app.use('/api/lichkham', lichkhamRoutes);
+app.use('/api/phongkham', phongkhamRoutes);
 app.use('/api/hoadon', hoadonRoutes);
 app.use('/api/hosobenhan', hosobenhanRoutes);
 

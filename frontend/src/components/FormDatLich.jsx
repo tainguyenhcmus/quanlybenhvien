@@ -15,14 +15,9 @@ export default function FormDatLich({ onSuccess }) {
 
   const loadOptions = async () => {
     try {
-      const bsRes = await api.get('/bacsi');
+      const [bsRes, pkRes] = await Promise.all([api.get('/bacsi'), api.get('/phongkham')]);
       setBacSi(bsRes.data);
-      // Phòng khám - using hardcoded for now, or create API endpoint
-      setPhongKham([
-        { MaPhong: 1, TenPhong: 'Khoa Tim mạch' },
-        { MaPhong: 2, TenPhong: 'Khoa Nội khoa' },
-        { MaPhong: 3, TenPhong: 'Khoa Ngoại khoa' }
-      ]);
+      setPhongKham(pkRes.data);
     } catch (err) {
       console.error('Error loading options:', err);
     }

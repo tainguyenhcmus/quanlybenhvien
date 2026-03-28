@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import FormDatLich from '../components/FormDatLich';
+import ChatDatLich from '../components/ChatDatLich';
 import TableDanhSach from '../components/TableDanhSach';
 import MedicalRecord from '../components/MedicalRecord';
 import { FaCalendarCheck, FaHistory, FaFileMedical } from 'react-icons/fa';
@@ -13,6 +14,7 @@ export default function BenhNhan(){
   const [loading, setLoading] = useState(true);
   const [selectedLich, setSelectedLich] = useState(null);
   const [activeTab, setActiveTab] = useState('appointments');
+  const [bookingMode, setBookingMode] = useState('form');
 
   const load = async ()=> {
     try {
@@ -150,8 +152,36 @@ export default function BenhNhan(){
                 )}
               </div>
             </div>
-            <div>
-              <FormDatLich onSuccess={load} />
+            <div className="min-w-0 space-y-4">
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-gray-50 p-1">
+                <button
+                  type="button"
+                  onClick={() => setBookingMode('form')}
+                  className={`flex-1 py-2 px-3 text-sm font-semibold rounded-md transition-all ${
+                    bookingMode === 'form'
+                      ? 'bg-white text-green-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Form đặt lịch
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingMode('ai')}
+                  className={`flex-1 py-2 px-3 text-sm font-semibold rounded-md transition-all ${
+                    bookingMode === 'ai'
+                      ? 'bg-white text-purple-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Trợ lý AI
+                </button>
+              </div>
+              {bookingMode === 'form' ? (
+                <FormDatLich onSuccess={load} />
+              ) : (
+                <ChatDatLich onSuccess={load} />
+              )}
             </div>
           </div>
         )}
