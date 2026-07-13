@@ -33,6 +33,15 @@ export default function QuanLy(){
   const [oncallView, setOncallView] = useState('calendar');
   const [hoanDoiFilter, setHoanDoiFilter] = useState('Chờ duyệt');
   const [lichSuRefreshKey, setLichSuRefreshKey] = useState(0);
+  const [showBulkLichTrucModal, setShowBulkLichTrucModal] = useState(false);
+  const [bulkForm, setBulkForm] = useState({
+    MaBacSi: '',
+    MaPhong: '',
+    NgayTrongTuan: '',
+    CacThu: [1, 2, 3, 4, 5],
+    CacCa: ['Sáng'],
+    GhiChu: ''
+  });
   const [lichTrucForm, setLichTrucForm] = useState({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [doctorForm, setDoctorForm] = useState({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
@@ -156,6 +165,61 @@ export default function QuanLy(){
       await loadAllData();
     } catch(err) {
       toast.error(err?.response?.data?.message || 'Thao tác thất bại');
+    }
+  };
+
+  const toggleBulkThu = (thu) => {
+    setBulkForm((prev) => {
+      const has = prev.CacThu.includes(thu);
+      return {
+        ...prev,
+        CacThu: has ? prev.CacThu.filter((t) => t !== thu) : [...prev.CacThu, thu].sort()
+      };
+    });
+  };
+
+  const toggleBulkCa = (ca) => {
+    setBulkForm((prev) => {
+      const has = prev.CacCa.includes(ca);
+      return {
+        ...prev,
+        CacCa: has ? prev.CacCa.filter((c) => c !== ca) : [...prev.CacCa, ca]
+      };
+    });
+  };
+
+  const handleSaveBulkLichTruc = async (e) => {
+    e.preventDefault();
+    if (!bulkForm.CacThu.length) {
+      toast.error('Chọn ít nhất một thứ trong tuần');
+      return;
+    }
+    if (!bulkForm.CacCa.length) {
+      toast.error('Chọn ít nhất một ca trực');
+      return;
+    }
+    try {
+      const res = await api.post('/lichtruc/hang-loat', {
+        MaBacSi: parseInt(bulkForm.MaBacSi),
+        MaPhong: bulkForm.MaPhong ? parseInt(bulkForm.MaPhong) : null,
+        NgayTrongTuan: bulkForm.NgayTrongTuan,
+        CacThu: bulkForm.CacThu,
+        CacCa: bulkForm.CacCa,
+        GhiChu: bulkForm.GhiChu
+      });
+      toast.success(res.data?.message || 'Tạo lịch hàng loạt thành công');
+      setShowBulkLichTrucModal(false);
+      setBulkForm({
+        MaBacSi: '',
+        MaPhong: '',
+        NgayTrongTuan: '',
+        CacThu: [1, 2, 3, 4, 5],
+        CacCa: ['Sáng'],
+        GhiChu: ''
+      });
+      await loadAllData();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Tạo hàng loạt thất bại');
     }
   };
 
@@ -966,24 +1030,44 @@ export default function QuanLy(){
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-orange-200/20 to-amber-200/20 rounded-full -mr-48 -mt-48"></div>
             <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
                   <FaClock className="text-white text-xl" />
                 </div>
                 Quản lý lịch trực bác sĩ
               </h2>
-              <button
-                onClick={() => {
-                  setEditingLichTruc(null);
-                  setLichTrucForm({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
-                  setShowLichTrucModal(true);
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                <FaPlus />
-                <span>Thêm lịch trực</span>
-              </button>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkForm({
+                      MaBacSi: '',
+                      MaPhong: '',
+                      NgayTrongTuan: '',
+                      CacThu: [1, 2, 3, 4, 5],
+                      CacCa: ['Sáng'],
+                      GhiChu: ''
+                    });
+                    setShowBulkLichTrucModal(true);
+                  }}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+                >
+                  <FaCalendarAlt />
+                  <span>Tạo cả tuần</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingLichTruc(null);
+                    setLichTrucForm({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
+                    setShowLichTrucModal(true);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  <FaPlus />
+                  <span>Thêm lịch trực</span>
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2 mb-4">
               <button
@@ -1435,6 +1519,131 @@ export default function QuanLy(){
                       setEditingLichTruc(null);
                       setLichTrucForm({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
                     }}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showBulkLichTrucModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Tạo lịch trực cả tuần</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Chọn một ngày bất kỳ trong tuần — hệ thống lấy tuần đó (T2–CN), tạo nhiều ca đã duyệt.
+              </p>
+              <form onSubmit={handleSaveBulkLichTruc} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Bác sĩ *</label>
+                  <select
+                    value={bulkForm.MaBacSi}
+                    onChange={(e) => setBulkForm({ ...bulkForm, MaBacSi: e.target.value })}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-600 outline-none bg-white"
+                    required
+                  >
+                    <option value="">-- Chọn bác sĩ --</option>
+                    {doctors.map((d) => (
+                      <option key={d.MaBacSi} value={d.MaBacSi}>
+                        {d.HoTen} - {d.ChuyenKhoa || 'Chưa có chuyên khoa'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phòng/Khoa</label>
+                  <select
+                    value={bulkForm.MaPhong}
+                    onChange={(e) => setBulkForm({ ...bulkForm, MaPhong: e.target.value })}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-600 outline-none bg-white"
+                  >
+                    <option value="">-- Chọn phòng/khoa --</option>
+                    {phongKham.map((p) => (
+                      <option key={p.MaPhong} value={p.MaPhong}>{p.TenPhong}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ngày trong tuần *</label>
+                  <input
+                    type="date"
+                    value={bulkForm.NgayTrongTuan}
+                    onChange={(e) => setBulkForm({ ...bulkForm, NgayTrongTuan: e.target.value })}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-600 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Các ngày trực *</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { v: 1, l: 'T2' },
+                      { v: 2, l: 'T3' },
+                      { v: 3, l: 'T4' },
+                      { v: 4, l: 'T5' },
+                      { v: 5, l: 'T6' },
+                      { v: 6, l: 'T7' },
+                      { v: 7, l: 'CN' }
+                    ].map((d) => (
+                      <button
+                        key={d.v}
+                        type="button"
+                        onClick={() => toggleBulkThu(d.v)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                          bulkForm.CacThu.includes(d.v)
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
+                        }`}
+                      >
+                        {d.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ca trực *</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Sáng', 'Chiều', 'Đêm'].map((ca) => (
+                      <button
+                        key={ca}
+                        type="button"
+                        onClick={() => toggleBulkCa(ca)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                          bulkForm.CacCa.includes(ca)
+                            ? 'bg-orange-500 text-white border-orange-500'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                        }`}
+                      >
+                        {ca}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ghi chú</label>
+                  <textarea
+                    value={bulkForm.GhiChu}
+                    onChange={(e) => setBulkForm({ ...bulkForm, GhiChu: e.target.value })}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-600 outline-none"
+                    rows={2}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Sẽ tạo khoảng {bulkForm.CacThu.length * bulkForm.CacCa.length} ca (bỏ qua nếu trùng).
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all"
+                  >
+                    Tạo hàng loạt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkLichTrucModal(false)}
                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
                   >
                     Hủy

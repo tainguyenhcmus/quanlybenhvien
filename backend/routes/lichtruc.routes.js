@@ -107,6 +107,9 @@ router.get('/bac-si/:maBacSi', auth, async (req, res) => {
   }
 });
 
+/** POST /api/lichtruc/hang-loat -> admin tạo lịch cả tuần */
+router.post('/hang-loat', auth, permit(1), controller.themLichTrucHangLoat);
+
 /**
  * POST /api/lichtruc/
  * Admin: tạo lịch trực cho bất kỳ bác sĩ (tự động duyệt)

@@ -223,10 +223,120 @@ async function xoaLichTruc(req, res) {
   }
 }
 
+function toYmd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Lấy các ngày trong tuần (T2=1 … CN=7) chứa NgayTrongTuan */
+function datesOfWeek(ngayTrongTuan, cacThu) {
+  const [y, m, d] = String(ngayTrongTuan).split('-').map(Number);
+  const start = new Date(y, m - 1, d);
+  const dow = start.getDay(); // 0=CN
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(start);
+  monday.setDate(start.getDate() + mondayOffset);
+
+  const thuSet = new Set((cacThu || []).map(Number));
+  const dates = [];
+  for (let i = 0; i < 7; i += 1) {
+    const isoThu = i + 1;
+    if (!thuSet.has(isoThu)) continue;
+    const cur = new Date(monday);
+    cur.setDate(monday.getDate() + i);
+    dates.push(toYmd(cur));
+  }
+  return dates;
+}
+
+/**
+ * Admin tạo lịch trực hàng loạt trong 1 tuần.
+ * Body: { MaBacSi, MaPhong?, NgayTrongTuan, CacThu: [1..7], CacCa: ['Sáng',...], GhiChu? }
+ */
+async function themLichTrucHangLoat(req, res) {
+  const { MaBacSi, MaPhong, NgayTrongTuan, CacThu, CacCa, GhiChu } = req.body;
+  if (!MaBacSi || !NgayTrongTuan) {
+    return res.status(400).json({ message: 'Thiếu bác sĩ hoặc ngày trong tuần' });
+  }
+  if (!Array.isArray(CacThu) || CacThu.length === 0) {
+    return res.status(400).json({ message: 'Chọn ít nhất một thứ trong tuần' });
+  }
+  if (!Array.isArray(CacCa) || CacCa.length === 0) {
+    return res.status(400).json({ message: 'Chọn ít nhất một ca trực' });
+  }
+
+  const validCa = ['Sáng', 'Chiều', 'Đêm'];
+  if (CacCa.some((c) => !validCa.includes(c))) {
+    return res.status(400).json({ message: 'Ca trực không hợp lệ. Chọn: Sáng, Chiều, Đêm' });
+  }
+
+  const dates = datesOfWeek(NgayTrongTuan, CacThu);
+  if (!dates.length) {
+    return res.status(400).json({ message: 'Không có ngày hợp lệ trong tuần đã chọn' });
+  }
+
+  const created = [];
+  const skipped = [];
+  const actor = req.user?.MaTaiKhoan;
+
+  try {
+    for (const ngay of dates) {
+      for (const ca of CacCa) {
+        try {
+          const [result] = await pool.execute(
+            `INSERT INTO LichTruc (MaBacSi, MaPhong, NgayTruc, CaTruc, TrangThai, GhiChu)
+             VALUES (?, ?, ?, ?, 'Đã duyệt', ?)`,
+            [MaBacSi, MaPhong || null, ngay, ca, GhiChu || null]
+          );
+          const id = result.insertId;
+          created.push({ MaLichTruc: id, NgayTruc: ngay, CaTruc: ca });
+          await ghiLichSu({
+            MaLichTruc: id,
+            LoaiHanhDong: 'TaoMoi',
+            MoTa: `Admin tạo lịch trực hàng loạt: ${ngay} ca ${ca}`,
+            MaTaiKhoan: actor
+          });
+        } catch (err) {
+          if (err.code === 'ER_DUP_ENTRY') {
+            skipped.push({ NgayTruc: ngay, CaTruc: ca, lyDo: 'Đã có ca này' });
+          } else {
+            throw err;
+          }
+        }
+      }
+    }
+
+    if (created.length) {
+      const maTkBs = await getMaTaiKhoanBacSi(parseInt(MaBacSi));
+      if (maTkBs) {
+        await taoThongBao({
+          MaTaiKhoan: maTkBs,
+          TieuDe: 'Được xếp lịch trực cả tuần',
+          NoiDung: `Bạn được xếp ${created.length} ca trực trong tuần (bắt đầu quanh ${NgayTrongTuan})`,
+          Loai: 'LichTruc',
+          MaLienKet: created[0].MaLichTruc
+        });
+      }
+    }
+
+    res.json({
+      message: `Đã tạo ${created.length} ca trực${skipped.length ? `, bỏ qua ${skipped.length} ca trùng` : ''}`,
+      created,
+      skipped
+    });
+  } catch (err) {
+    console.error('Error bulk creating on-call schedules:', err);
+    res.status(500).json({ message: 'Lỗi server', error: err.message });
+  }
+}
+
 module.exports = {
   layTatCaLichTruc,
   layLichTrucTheoBacSi,
   themLichTruc,
+  themLichTrucHangLoat,
   capNhatLichTruc,
   capNhatTrangThai,
   xoaLichTruc

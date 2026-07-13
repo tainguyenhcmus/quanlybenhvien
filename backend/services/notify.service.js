@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { guiThongBaoNgoai } = require('./messaging.service');
 
 async function taoThongBao({ MaTaiKhoan, TieuDe, NoiDung, Loai = 'HeThong', MaLienKet = null }, db = pool) {
   if (!MaTaiKhoan || !TieuDe) return;
@@ -6,6 +7,10 @@ async function taoThongBao({ MaTaiKhoan, TieuDe, NoiDung, Loai = 'HeThong', MaLi
     'INSERT INTO ThongBao (MaTaiKhoan, TieuDe, NoiDung, Loai, MaLienKet) VALUES (?, ?, ?, ?, ?)',
     [MaTaiKhoan, TieuDe, NoiDung || null, Loai, MaLienKet]
   );
+  // Email/SMS song song — không chặn response nếu gửi thất bại
+  setImmediate(() => {
+    guiThongBaoNgoai(MaTaiKhoan, TieuDe, NoiDung).catch(() => {});
+  });
 }
 
 async function thongBaoAdmins({ TieuDe, NoiDung, Loai = 'LichTruc', MaLienKet = null }, db = pool) {
