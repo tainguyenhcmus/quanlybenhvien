@@ -16,6 +16,10 @@ const lichkhamRoutes = require('./routes/lichkham.routes');
 const phongkhamRoutes = require('./routes/phongkham.routes');
 const hoadonRoutes = require('./routes/hoadon.routes');
 const hosobenhanRoutes = require('./routes/hosobenhan.routes');
+const lichtrucRoutes = require('./routes/lichtruc.routes');
+const hoandoiRoutes = require('./routes/hoandoi.routes');
+const thongbaoRoutes = require('./routes/thongbao.routes');
+const lichsuRoutes = require('./routes/lichsu.routes');
 
 // mount routes (mỗi require phải trả về một Router function)
 app.use('/api/auth', authRoutes);
@@ -25,6 +29,10 @@ app.use('/api/lichkham', lichkhamRoutes);
 app.use('/api/phongkham', phongkhamRoutes);
 app.use('/api/hoadon', hoadonRoutes);
 app.use('/api/hosobenhan', hosobenhanRoutes);
+app.use('/api/lichtruc', lichtrucRoutes);
+app.use('/api/hoandoi', hoandoiRoutes);
+app.use('/api/thongbao', thongbaoRoutes);
+app.use('/api/lichsu', lichsuRoutes);
 
 // health check (sử dụng db bên trong route / controller khi cần)
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));

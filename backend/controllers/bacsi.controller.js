@@ -72,6 +72,30 @@ async function capNhatBacSi(req, res) {
   }
 }
 
+async function layBacSiCungKhoa(req, res) {
+  try {
+    const [selfRows] = await pool.execute(
+      'SELECT * FROM BacSi WHERE MaTaiKhoan = ? LIMIT 1',
+      [req.user.MaTaiKhoan]
+    );
+    const self = selfRows[0];
+    if (!self) {
+      return res.status(400).json({ message: 'Không tìm thấy thông tin bác sĩ của bạn' });
+    }
+    if (!self.ChuyenKhoa) {
+      return res.json({ bacSi: self, dongNghiep: [] });
+    }
+    const [rows] = await pool.execute(
+      'SELECT * FROM BacSi WHERE ChuyenKhoa = ? AND MaBacSi != ? ORDER BY HoTen',
+      [self.ChuyenKhoa, self.MaBacSi]
+    );
+    res.json({ bacSi: self, dongNghiep: rows });
+  } catch (err) {
+    console.error('Error fetching same-department doctors:', err);
+    res.status(500).json({ message: 'Lỗi server', error: err.message });
+  }
+}
+
 async function xoaBacSi(req, res) {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ message: 'Id không hợp lệ' });
@@ -84,4 +108,4 @@ async function xoaBacSi(req, res) {
   }
 }
 
-module.exports = { layTatCaBacSi, themBacSi, capNhatBacSi, xoaBacSi };
+module.exports = { layTatCaBacSi, layBacSiCungKhoa, themBacSi, capNhatBacSi, xoaBacSi };

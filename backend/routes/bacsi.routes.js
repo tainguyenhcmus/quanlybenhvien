@@ -14,6 +14,9 @@ const controller = require('../controllers/bacsi.controller');
 /** GET /api/bacsi/ -> Tất cả người dùng đã đăng nhập */
 router.get('/', auth, controller.layTatCaBacSi);
 
+/** GET /api/bacsi/cung-khoa -> bác sĩ cùng khoa (để nhượng/hoán đổi ca) */
+router.get('/cung-khoa', auth, permit(2), controller.layBacSiCungKhoa);
+
 /** POST /api/bacsi/ -> thêm bác sĩ (admin only) */
 router.post('/', auth, permit(1), controller.themBacSi);
 

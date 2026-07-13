@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import TableDanhSach from '../components/TableDanhSach';
 import MedicalRecord from '../components/MedicalRecord';
+import CalendarLichTruc from '../components/CalendarLichTruc';
+import LichSuLichTrucPanel from '../components/LichSuLichTrucPanel';
 import { 
   FaShieldAlt, FaCalendarAlt, FaUsers, FaUserMd, FaCheckCircle, FaTimesCircle, 
   FaSync, FaChartLine, FaUser, FaHospital, FaEdit, FaTrash, FaPlus,
   FaUserFriends, FaStethoscope, FaFileMedical, FaDollarSign, FaClock,
-  FaExclamationTriangle, FaArrowUp, FaArrowDown
+  FaExclamationTriangle, FaArrowUp, FaArrowDown, FaExchangeAlt, FaList
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { formatDateVN, toDateKey } from '../utils/date';
 
 export default function QuanLy(){
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -17,9 +20,16 @@ export default function QuanLy(){
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
   const [hoSo, setHoSo] = useState([]);
+  const [lichTruc, setLichTruc] = useState([]);
+  const [yeuCauHoanDoi, setYeuCauHoanDoi] = useState([]);
+  const [phongKham, setPhongKham] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [showDoctorModal, setShowDoctorModal] = useState(false);
+  const [showLichTrucModal, setShowLichTrucModal] = useState(false);
+  const [editingLichTruc, setEditingLichTruc] = useState(null);
+  const [oncallView, setOncallView] = useState('calendar');
+  const [lichTrucForm, setLichTrucForm] = useState({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [doctorForm, setDoctorForm] = useState({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
   const [selectedHoSo, setSelectedHoSo] = useState(null);
@@ -32,18 +42,24 @@ export default function QuanLy(){
   const loadAllData = async () => {
     try {
       setLoading(true);
-      const [lichRes, usersRes, doctorsRes, patientsRes, hoSoRes] = await Promise.all([
+      const [lichRes, usersRes, doctorsRes, patientsRes, hoSoRes, lichTrucRes, phongRes, hoanDoiRes] = await Promise.all([
         api.get('/lichkham'),
         api.get('/auth/users'),
         api.get('/bacsi'),
         api.get('/benhnhan'),
-        api.get('/hosobenhan')
+        api.get('/hosobenhan'),
+        api.get('/lichtruc'),
+        api.get('/phongkham'),
+        api.get('/hoandoi').catch(() => ({ data: [] }))
       ]);
       setLich(lichRes.data);
       setUsers(usersRes.data);
       setDoctors(doctorsRes.data);
       setPatients(patientsRes.data);
       setHoSo(hoSoRes.data);
+      setLichTruc(lichTrucRes.data);
+      setPhongKham(phongRes.data);
+      setYeuCauHoanDoi(hoanDoiRes.data);
     } catch(e) {
       console.error('Error loading data:', e);
       toast.error('Không thể tải dữ liệu');
@@ -96,6 +112,84 @@ export default function QuanLy(){
     }
   };
 
+  const handleSaveLichTruc = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...lichTrucForm,
+        MaBacSi: parseInt(lichTrucForm.MaBacSi),
+        MaPhong: lichTrucForm.MaPhong ? parseInt(lichTrucForm.MaPhong) : null
+      };
+      if (editingLichTruc) {
+        await api.put(`/lichtruc/${editingLichTruc.MaLichTruc}`, {
+          ...payload,
+          TrangThai: editingLichTruc.TrangThai
+        });
+        toast.success('Cập nhật lịch trực thành công');
+      } else {
+        await api.post('/lichtruc', payload);
+        toast.success('Thêm lịch trực thành công');
+      }
+      setShowLichTrucModal(false);
+      setEditingLichTruc(null);
+      setLichTrucForm({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
+      await loadAllData();
+    } catch(err) {
+      toast.error(err?.response?.data?.message || 'Thao tác thất bại');
+    }
+  };
+
+  const handleEditLichTruc = (item) => {
+    setEditingLichTruc(item);
+    setLichTrucForm({
+      MaBacSi: item.MaBacSi?.toString() || '',
+      MaPhong: item.MaPhong?.toString() || '',
+      NgayTruc: item.NgayTruc ? toDateKey(item.NgayTruc) : '',
+      CaTruc: item.CaTruc || 'Sáng',
+      GhiChu: item.GhiChu || ''
+    });
+    setShowLichTrucModal(true);
+  };
+
+  const handleDeleteLichTruc = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa lịch trực này?')) return;
+    try {
+      await api.delete(`/lichtruc/${id}`);
+      toast.success('Xóa lịch trực thành công');
+      await loadAllData();
+    } catch(err) {
+      toast.error(err?.response?.data?.message || 'Xóa thất bại');
+    }
+  };
+
+  const updateLichTrucStatus = async (id, trangThai) => {
+    try {
+      setUpdating(id);
+      await api.put(`/lichtruc/${id}/trangthai`, { TrangThai: trangThai });
+      toast.success('Đã cập nhật trạng thái lịch trực');
+      await loadAllData();
+    } catch(err) {
+      toast.error(err?.response?.data?.message || 'Cập nhật thất bại');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const updateHoanDoiStatus = async (id, trangThai) => {
+    try {
+      setUpdating(`hd-${id}`);
+      await api.put(`/hoandoi/${id}/trangthai`, { TrangThai: trangThai });
+      toast.success(trangThai === 'Đã duyệt' ? 'Đã duyệt yêu cầu hoán đổi/nhượng ca' : 'Đã từ chối yêu cầu');
+      await loadAllData();
+    } catch(err) {
+      toast.error(err?.response?.data?.message || 'Cập nhật thất bại');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const formatCaTruc = (ngay, ca) => ngay ? `${formatDateVN(ngay)} - ${ca}` : '-';
+
   const handleEditDoctor = (doctor) => {
     setEditingDoctor(doctor);
     const chuyenKhoa = doctor.ChuyenKhoa || '';
@@ -121,7 +215,12 @@ export default function QuanLy(){
       'Chờ xác nhận': 'bg-yellow-100 text-yellow-800',
       'Đã xác nhận': 'bg-blue-100 text-blue-800',
       'Hoàn thành': 'bg-green-100 text-green-800',
-      'Hủy': 'bg-red-100 text-red-800'
+      'Hủy': 'bg-red-100 text-red-800',
+      'Chờ duyệt': 'bg-yellow-100 text-yellow-800',
+      'Đã duyệt': 'bg-green-100 text-green-800',
+      'Từ chối': 'bg-red-100 text-red-800',
+      'Chờ xác nhận': 'bg-yellow-100 text-yellow-800',
+      'Hủy': 'bg-gray-100 text-gray-800'
     };
     const className = statusMap[status] || 'bg-gray-100 text-gray-800';
     return (
@@ -152,8 +251,65 @@ export default function QuanLy(){
     { id: 'records', label: 'Hồ sơ bệnh án', icon: FaFileMedical },
     { id: 'users', label: 'Tài khoản', icon: FaUser },
     { id: 'doctors', label: 'Bác sĩ', icon: FaStethoscope },
+    { id: 'oncall', label: 'Lịch trực', icon: FaClock },
     { id: 'patients', label: 'Bệnh nhân', icon: FaUserFriends }
   ];
+
+  const parseNgayTruc = (ngay) => {
+    const s = toDateKey(ngay);
+    if (!s) return null;
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const lichTrucHomNay = lichTruc.filter((lt) => {
+    const d = parseNgayTruc(lt.NgayTruc);
+    return d && d.getTime() === todayStart.getTime() && lt.TrangThai === 'Đã duyệt';
+  });
+
+  const lichTrucSapToi = lichTruc
+    .filter((lt) => {
+      const d = parseNgayTruc(lt.NgayTruc);
+      return d && d > todayStart && lt.TrangThai === 'Đã duyệt';
+    })
+    .sort((a, b) => parseNgayTruc(a.NgayTruc) - parseNgayTruc(b.NgayTruc))
+    .slice(0, 6);
+
+  const lichTrucChoDuyet = lichTruc.filter((lt) => lt.TrangThai === 'Chờ duyệt');
+
+  const getCaTrucBadge = (ca) => {
+    const map = {
+      'Sáng': 'bg-yellow-100 text-yellow-800',
+      'Chiều': 'bg-orange-100 text-orange-800',
+      'Đêm': 'bg-indigo-100 text-indigo-800'
+    };
+    return (
+      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${map[ca] || 'bg-gray-100 text-gray-800'}`}>
+        {ca}
+      </span>
+    );
+  };
+
+  const renderLichTrucItem = (item) => (
+    <div key={item.MaLichTruc} className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl hover:from-orange-100 hover:to-amber-100 transition-all border border-orange-100 shadow-sm">
+      <div className="flex-1">
+        <p className="font-semibold text-gray-800 text-sm mb-1">{item.TenBacSi || 'N/A'}</p>
+        <p className="text-xs text-gray-600 mb-1">
+          {item.ChuyenKhoa || 'Chưa có chuyên khoa'} • {item.TenPhong || 'Chưa chọn phòng'}
+        </p>
+        <p className="text-xs text-gray-500">
+          {formatDateVN(item.NgayTruc)}
+        </p>
+      </div>
+      <div className="ml-3 flex flex-col items-end gap-1">
+        {getCaTrucBadge(item.CaTruc)}
+        {getStatusBadge(item.TrangThai)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen relative py-8" style={{
@@ -283,7 +439,7 @@ export default function QuanLy(){
             </div>
 
             {/* Additional Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
               <div className="relative bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
@@ -342,6 +498,24 @@ export default function QuanLy(){
                   </div>
                   <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
                     <FaUsers className="text-3xl text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="relative bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 p-6 rounded-2xl shadow-2xl transform hover:scale-105 transition-all overflow-hidden group cursor-pointer"
+                onClick={() => setActiveTab('oncall')}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-orange-100 text-sm font-medium mb-1">Lịch trực</p>
+                    <p className="text-4xl font-bold text-white mb-1">{lichTruc.length}</p>
+                    <p className="text-xs text-orange-200 mt-1">
+                      {lichTrucHomNay.length} hôm nay • {lichTrucChoDuyet.length} chờ duyệt
+                    </p>
+                  </div>
+                  <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                    <FaClock className="text-3xl text-white" />
                   </div>
                 </div>
               </div>
@@ -429,6 +603,76 @@ export default function QuanLy(){
                     <p className="text-center text-gray-500 py-8">Không có lịch khám sắp tới</p>
                   )}
                 </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Lịch trực bác sĩ */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/30 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-orange-200/30 to-amber-200/30 rounded-full -mr-32 -mt-32"></div>
+                <div className="relative z-10">
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
+                      <FaStethoscope className="text-white" />
+                    </div>
+                    Trực hôm nay
+                  </h3>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {lichTrucHomNay.length > 0 ? (
+                      lichTrucHomNay.map(renderLichTrucItem)
+                    ) : (
+                      <p className="text-center text-gray-500 py-8">Không có bác sĩ trực hôm nay</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/30 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full -mr-32 -mt-32"></div>
+                <div className="relative z-10">
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-lg flex items-center justify-center">
+                      <FaCalendarAlt className="text-white" />
+                    </div>
+                    Lịch trực sắp tới
+                  </h3>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {lichTrucSapToi.length > 0 ? (
+                      lichTrucSapToi.map(renderLichTrucItem)
+                    ) : (
+                      <p className="text-center text-gray-500 py-8">Không có lịch trực sắp tới</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/30 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-yellow-200/30 to-orange-200/30 rounded-full -mr-32 -mt-32"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent flex items-center gap-2">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
+                        <FaExclamationTriangle className="text-white" />
+                      </div>
+                      Chờ duyệt
+                    </h3>
+                    {lichTrucChoDuyet.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab('oncall')}
+                        className="text-xs font-medium text-orange-600 hover:text-orange-700 underline"
+                      >
+                        Xem tất cả
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {lichTrucChoDuyet.length > 0 ? (
+                      lichTrucChoDuyet.slice(0, 6).map(renderLichTrucItem)
+                    ) : (
+                      <p className="text-center text-gray-500 py-8">Không có đăng ký chờ duyệt</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -689,6 +933,204 @@ export default function QuanLy(){
           </div>
         )}
 
+        {activeTab === 'oncall' && (
+          <div className="space-y-6">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-orange-200/20 to-amber-200/20 rounded-full -mr-48 -mt-48"></div>
+            <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <FaClock className="text-white text-xl" />
+                </div>
+                Quản lý lịch trực bác sĩ
+              </h2>
+              <button
+                onClick={() => {
+                  setEditingLichTruc(null);
+                  setLichTrucForm({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
+                  setShowLichTrucModal(true);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <FaPlus />
+                <span>Thêm lịch trực</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setOncallView('calendar')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
+                  oncallView === 'calendar' ? 'bg-orange-500 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <FaCalendarAlt /> Lịch tháng
+              </button>
+              <button
+                type="button"
+                onClick={() => setOncallView('list')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
+                  oncallView === 'list' ? 'bg-orange-500 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <FaList /> Danh sách
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <svg className="animate-spin h-8 w-8 text-purple-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-4 text-gray-500">Đang tải dữ liệu...</p>
+              </div>
+            ) : oncallView === 'calendar' ? (
+              <CalendarLichTruc
+                data={lichTruc}
+                showDoctor={true}
+                onSelectItem={(item) => handleEditLichTruc(item)}
+                renderDayActions={(items) => (
+                  <div className="flex gap-2 flex-wrap">
+                    {items.filter((i) => i.TrangThai === 'Chờ duyệt').slice(0, 1).map((item) => (
+                      <React.Fragment key={item.MaLichTruc}>
+                        <button
+                          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+                          disabled={updating === item.MaLichTruc}
+                          onClick={() => updateLichTrucStatus(item.MaLichTruc, 'Đã duyệt')}
+                        >
+                          <FaCheckCircle /> Duyệt
+                        </button>
+                        <button
+                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+                          disabled={updating === item.MaLichTruc}
+                          onClick={() => updateLichTrucStatus(item.MaLichTruc, 'Từ chối')}
+                        >
+                          <FaTimesCircle /> Từ chối
+                        </button>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+              />
+            ) : (
+              <TableDanhSach
+                columns={[
+                  { key:'MaLichTruc', title:'Mã', render: r => <span className="font-mono text-sm">#{r.MaLichTruc}</span> },
+                  { key:'TenBacSi', title:'Bác sĩ', render: r => <span className="font-medium">{r.TenBacSi}</span> },
+                  { key:'ChuyenKhoa', title:'Chuyên khoa', render: r => r.ChuyenKhoa || '-' },
+                  { key:'NgayTruc', title:'Ngày trực', render: r => formatDateVN(r.NgayTruc) },
+                  { key:'CaTruc', title:'Ca trực', render: r => (
+                    <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-semibold">{r.CaTruc}</span>
+                  )},
+                  { key:'TenPhong', title:'Phòng/Khoa', render: r => r.TenPhong || '-' },
+                  { key:'TrangThai', title:'Trạng thái', render: r => getStatusBadge(r.TrangThai) },
+                  { key:'GhiChu', title:'Ghi chú', render: r => r.GhiChu || '-' }
+                ]}
+                data={lichTruc}
+                actions={(row) => (
+                  <div className="flex gap-2 flex-wrap">
+                    {row.TrangThai === 'Chờ duyệt' && (
+                      <>
+                        <button
+                          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-1 disabled:opacity-50"
+                          disabled={updating === row.MaLichTruc}
+                          onClick={() => updateLichTrucStatus(row.MaLichTruc, 'Đã duyệt')}
+                        >
+                          <FaCheckCircle />
+                          <span>Duyệt</span>
+                        </button>
+                        <button
+                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-1 disabled:opacity-50"
+                          disabled={updating === row.MaLichTruc}
+                          onClick={() => updateLichTrucStatus(row.MaLichTruc, 'Từ chối')}
+                        >
+                          <FaTimesCircle />
+                          <span>Từ chối</span>
+                        </button>
+                      </>
+                    )}
+                    <button
+                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-1"
+                      onClick={() => handleEditLichTruc(row)}
+                    >
+                      <FaEdit />
+                      <span>Sửa</span>
+                    </button>
+                    <button
+                      className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-1"
+                      onClick={() => handleDeleteLichTruc(row.MaLichTruc)}
+                    >
+                      <FaTrash />
+                      <span>Xóa</span>
+                    </button>
+                  </div>
+                )}
+              />
+            )}
+            </div>
+          </div>
+
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-200/20 to-purple-200/20 rounded-full -mr-48 -mt-48"></div>
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6 flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <FaExchangeAlt className="text-white text-xl" />
+                </div>
+                Yêu cầu hoán đổi / nhượng ca
+              </h2>
+              {loading ? (
+                <div className="text-center py-8 text-gray-500">Đang tải...</div>
+              ) : yeuCauHoanDoi.filter(y => y.TrangThai === 'Chờ duyệt').length === 0 ? (
+                <p className="text-center text-gray-500 py-8">Không có yêu cầu chờ duyệt</p>
+              ) : (
+                <TableDanhSach
+                  columns={[
+                    { key:'MaYeuCau', title:'Mã', render: r => <span className="font-mono text-sm">#{r.MaYeuCau}</span> },
+                    { key:'LoaiYeuCau', title:'Loại', render: r => (
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${r.LoaiYeuCau === 'Nhuong' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'}`}>
+                        {r.LoaiYeuCau === 'Nhuong' ? 'Nhượng ca' : 'Hoán đổi'}
+                      </span>
+                    )},
+                    { key:'TenBacSiGui', title:'Bác sĩ gửi', render: r => <span className="font-medium">{r.TenBacSiGui}</span> },
+                    { key:'TenBacSiNhan', title:'Bác sĩ nhận', render: r => r.TenBacSiNhan },
+                    { key:'CaGui', title:'Ca gửi', render: r => formatCaTruc(r.NgayTrucGui, r.CaTrucGui) },
+                    { key:'CaNhan', title:'Ca đối tác', render: r => r.LoaiYeuCau === 'HoanDoi' ? formatCaTruc(r.NgayTrucNhan, r.CaTrucNhan) : '-' },
+                    { key:'TrangThai', title:'Trạng thái', render: r => getStatusBadge(r.TrangThai) },
+                    { key:'GhiChu', title:'Ghi chú', render: r => r.GhiChu || '-' }
+                  ]}
+                  data={yeuCauHoanDoi.filter(y => y.TrangThai === 'Chờ duyệt')}
+                  actions={(row) => (
+                    <div className="flex gap-2">
+                      <button
+                        className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium flex items-center gap-1 disabled:opacity-50"
+                        disabled={updating === `hd-${row.MaYeuCau}`}
+                        onClick={() => updateHoanDoiStatus(row.MaYeuCau, 'Đã duyệt')}
+                      >
+                        <FaCheckCircle /><span>Duyệt</span>
+                      </button>
+                      <button
+                        className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-1 disabled:opacity-50"
+                        disabled={updating === `hd-${row.MaYeuCau}`}
+                        onClick={() => updateHoanDoiStatus(row.MaYeuCau, 'Từ chối')}
+                      >
+                        <FaTimesCircle /><span>Từ chối</span>
+                      </button>
+                    </div>
+                  )}
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6">
+            <LichSuLichTrucPanel title="Lịch sử thay đổi lịch trực" compact />
+          </div>
+          </div>
+        )}
+
         {activeTab === 'patients' && (
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-green-200/20 to-emerald-200/20 rounded-full -mr-48 -mt-48"></div>
@@ -840,6 +1282,96 @@ export default function QuanLy(){
                       setEditingDoctor(null);
                       setDoctorForm({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
                       setShowCustomSpecialty(false);
+                    }}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showLichTrucModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                {editingLichTruc ? 'Sửa lịch trực' : 'Thêm lịch trực mới'}
+              </h3>
+              <form onSubmit={handleSaveLichTruc} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Bác sĩ *</label>
+                  <select
+                    value={lichTrucForm.MaBacSi}
+                    onChange={e => setLichTrucForm({...lichTrucForm, MaBacSi: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-600 outline-none bg-white"
+                    required
+                  >
+                    <option value="">-- Chọn bác sĩ --</option>
+                    {doctors.map(d => (
+                      <option key={d.MaBacSi} value={d.MaBacSi}>{d.HoTen} - {d.ChuyenKhoa || 'Chưa có chuyên khoa'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phòng/Khoa</label>
+                  <select
+                    value={lichTrucForm.MaPhong}
+                    onChange={e => setLichTrucForm({...lichTrucForm, MaPhong: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-600 outline-none bg-white"
+                  >
+                    <option value="">-- Chọn phòng/khoa --</option>
+                    {phongKham.map(p => (
+                      <option key={p.MaPhong} value={p.MaPhong}>{p.TenPhong}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ngày trực *</label>
+                  <input
+                    type="date"
+                    value={lichTrucForm.NgayTruc}
+                    onChange={e => setLichTrucForm({...lichTrucForm, NgayTruc: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-600 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ca trực *</label>
+                  <select
+                    value={lichTrucForm.CaTruc}
+                    onChange={e => setLichTrucForm({...lichTrucForm, CaTruc: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-600 outline-none bg-white"
+                    required
+                  >
+                    <option value="Sáng">Sáng (6h - 14h)</option>
+                    <option value="Chiều">Chiều (14h - 22h)</option>
+                    <option value="Đêm">Đêm (22h - 6h)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ghi chú</label>
+                  <textarea
+                    value={lichTrucForm.GhiChu}
+                    onChange={e => setLichTrucForm({...lichTrucForm, GhiChu: e.target.value})}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-600 outline-none"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all"
+                  >
+                    {editingLichTruc ? 'Cập nhật' : 'Thêm mới'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLichTrucModal(false);
+                      setEditingLichTruc(null);
+                      setLichTrucForm({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
                     }}
                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
                   >

@@ -31,6 +31,9 @@ const config = {
   ssl: isRailway ? { 
     rejectUnauthorized: false 
   } : false,
+  // DATE/DATETIME trả về string để tránh lệch timezone khi JSON hóa Date object
+  dateStrings: true,
+  timezone: process.env.DB_TIMEZONE || '+07:00',
   // Connection timeout (increase for Railway)
   connectTimeout: isRailway ? 30000 : 10000,
   // Enable keep-alive
@@ -43,6 +46,8 @@ console.log('📊 MySQL connect config:', {
   database: config.database,
   port: config.port,
   ssl: config.ssl ? 'enabled' : 'disabled',
+  timezone: config.timezone,
+  dateStrings: true,
   isRailway: isRailway ? 'yes' : 'no',
   connectTimeout: config.connectTimeout,
 });

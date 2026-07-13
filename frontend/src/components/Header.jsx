@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { FaHospital, FaUser, FaSignOutAlt } from 'react-icons/fa';
-import { FiHeart } from 'react-icons/fi';
+import { FaHospital, FaSignOutAlt } from 'react-icons/fa';
+import NotificationBell from './NotificationBell';
 
 export default function Header() {
   const { user, logout } = useContext(AuthContext);
@@ -69,6 +69,7 @@ export default function Header() {
                     Bệnh nhân
                   </Link>
                 )}
+                <NotificationBell />
                 <div className="ml-2 pl-2 border-l border-gray-200">
                   <div className="flex items-center gap-3">
                     <div className="text-right">
@@ -109,4 +110,3 @@ export default function Header() {
     </header>
   );
 }
-
