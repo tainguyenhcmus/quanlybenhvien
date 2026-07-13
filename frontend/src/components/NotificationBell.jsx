@@ -1,11 +1,18 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaBell, FaCheckDouble } from 'react-icons/fa';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { formatDateTimeVN } from '../utils/date';
 
+/** Thông báo → tab oncall + reload trang hiện tại */
+function emitOpenOncall(detail = {}) {
+  window.dispatchEvent(new CustomEvent('app:open-oncall', { detail }));
+}
+
 export default function NotificationBell() {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
@@ -55,6 +62,22 @@ export default function NotificationBell() {
     } catch (_) {}
   };
 
+  const openNotification = async (tb) => {
+    if (!tb.DaDoc) await markOne(tb.MaThongBao);
+    setOpen(false);
+
+    const isOncallRelated = ['HoanDoi', 'LichTruc', 'HeThong'].includes(tb.Loai) || !tb.Loai;
+    if (!isOncallRelated) return;
+
+    const path = user.MaChucVu === 1 ? '/quan-ly' : user.MaChucVu === 2 ? '/bac-si' : null;
+    if (!path) return;
+
+    if (window.location.pathname !== path) {
+      navigate(path, { state: { openTab: 'oncall', maLienKet: tb.MaLienKet, loai: tb.Loai } });
+    }
+    emitOpenOncall({ maLienKet: tb.MaLienKet, loai: tb.Loai });
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -93,7 +116,7 @@ export default function NotificationBell() {
                 <button
                   type="button"
                   key={tb.MaThongBao}
-                  onClick={() => !tb.DaDoc && markOne(tb.MaThongBao)}
+                  onClick={() => openNotification(tb)}
                   className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-all ${
                     !tb.DaDoc ? 'bg-red-50/60' : ''
                   }`}

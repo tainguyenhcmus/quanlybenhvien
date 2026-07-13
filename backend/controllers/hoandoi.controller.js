@@ -287,9 +287,12 @@ async function huyYeuCau(req, res) {
   const maBacSi = req.maBacSi;
 
   try {
+    // Người gửi có thể hủy khi còn chờ đối tác hoặc chờ admin duyệt
     const [rows] = await pool.execute(
-      'SELECT * FROM YeuCauHoanDoiCa WHERE MaYeuCau = ? AND MaBacSiGui = ? AND TrangThai = ?',
-      [id, maBacSi, 'Chờ xác nhận']
+      `SELECT * FROM YeuCauHoanDoiCa
+       WHERE MaYeuCau = ? AND MaBacSiGui = ?
+         AND TrangThai IN ('Chờ xác nhận', 'Chờ duyệt')`,
+      [id, maBacSi]
     );
     if (!rows.length) {
       return res.status(404).json({ message: 'Không tìm thấy yêu cầu hoặc không thể hủy' });

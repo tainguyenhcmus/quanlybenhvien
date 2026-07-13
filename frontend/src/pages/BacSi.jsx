@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import TableDanhSach from '../components/TableDanhSach';
 import MedicalRecord from '../components/MedicalRecord';
@@ -6,9 +7,10 @@ import CalendarLichTruc from '../components/CalendarLichTruc';
 import LichSuLichTrucPanel from '../components/LichSuLichTrucPanel';
 import { FaUserMd, FaCalendarAlt, FaUsers, FaClock, FaFileMedical, FaPlus, FaTrash, FaExchangeAlt, FaHandPaper, FaCheck, FaTimes, FaList } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { formatDateVN, todayKey } from '../utils/date';
+import { formatDateVN, todayKey, toDateKey } from '../utils/date';
 
 export default function BacSi(){
+  const location = useLocation();
   const [lich, setLich] = useState([]);
   const [hoSo, setHoSo] = useState([]);
   const [lichTruc, setLichTruc] = useState([]);
@@ -25,6 +27,7 @@ export default function BacSi(){
   const [showHoanDoiModal, setShowHoanDoiModal] = useState(false);
   const [hoanDoiLoai, setHoanDoiLoai] = useState('Nhuong');
   const [oncallView, setOncallView] = useState('calendar');
+  const [lichSuRefreshKey, setLichSuRefreshKey] = useState(0);
   const [dangKyForm, setDangKyForm] = useState({ MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
   const [hoanDoiForm, setHoanDoiForm] = useState({ MaLichTrucGui: '', MaBacSiNhan: '', MaLichTrucNhan: '', GhiChu: '' });
 
@@ -48,6 +51,7 @@ export default function BacSi(){
       setDoctorsCungKhoa(cungKhoaRes.data.dongNghiep || []);
       setCaDoi(caDoiRes.data);
       setYeuCauHoanDoi(hoanDoiRes.data);
+      setLichSuRefreshKey((k) => k + 1);
     } catch(e){
       console.error('Error loading data:', e);
       toast.error('Không thể tải dữ liệu');
@@ -87,10 +91,22 @@ export default function BacSi(){
 
   const myMaBacSi = bacSiHienTai?.MaBacSi ?? lichTruc[0]?.MaBacSi;
   const myChuyenKhoa = bacSiHienTai?.ChuyenKhoa;
-  const caDaDuyet = lichTruc.filter((lt) => lt.TrangThai === 'Đã duyệt');
+  const today = todayKey();
+  const caDangChoHoanDoi = new Set(
+    yeuCauHoanDoi
+      .filter((y) => ['Chờ xác nhận', 'Chờ duyệt'].includes(y.TrangThai))
+      .flatMap((y) => [y.MaLichTrucGui, y.MaLichTrucNhan].filter(Boolean))
+  );
+  const coTheNhuongHoanDoi = (lt) =>
+    lt.TrangThai === 'Đã duyệt'
+    && toDateKey(lt.NgayTruc) >= today
+    && !caDangChoHoanDoi.has(lt.MaLichTruc);
+  const caDaDuyet = lichTruc.filter(coTheNhuongHoanDoi);
   const otherDoctors = doctorsCungKhoa;
   const caDoiTheoBacSi = caDoi.filter((c) => c.MaBacSi === parseInt(hoanDoiForm.MaBacSiNhan));
   const coTheHoanDoi = Boolean(myChuyenKhoa) && otherDoctors.length > 0;
+  const yeuCauGuiDi = yeuCauHoanDoi.filter((y) => y.MaBacSiGui === myMaBacSi);
+  const yeuCauNhanDuoc = yeuCauHoanDoi.filter((y) => y.MaBacSiNhan === myMaBacSi);
 
   const openHoanDoiModal = (loai, maLichTrucGui = '') => {
     setHoanDoiLoai(loai);
@@ -119,7 +135,7 @@ export default function BacSi(){
   const handleXacNhanYeuCau = async (id) => {
     try {
       await api.put(`/hoandoi/${id}/xacnhan`);
-      toast.success('Đã xác nhận, chờ quản trị viên duyệt');
+      toast.success('Đã xác nhận — lịch trực chưa đổi, chờ quản trị viên duyệt');
       await loadData();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Xác nhận thất bại');
@@ -165,7 +181,22 @@ export default function BacSi(){
     );
   };
 
-  useEffect(()=> { loadData(); },[]);
+  useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    if (location.state?.openTab === 'oncall') {
+      setActiveTab('oncall');
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const onOpen = () => {
+      setActiveTab('oncall');
+      loadData();
+    };
+    window.addEventListener('app:open-oncall', onOpen);
+    return () => window.removeEventListener('app:open-oncall', onOpen);
+  }, []);
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -422,16 +453,25 @@ export default function BacSi(){
                   showDoctor={false}
                   renderDayActions={(items) => (
                     <div className="flex gap-2 flex-wrap">
-                      {items.some((i) => i.TrangThai === 'Đã duyệt') && coTheHoanDoi && (
+                      {items.filter((i) => i.TrangThai === 'Chờ duyệt').map((item) => (
+                        <button
+                          key={`huy-${item.MaLichTruc}`}
+                          onClick={() => handleHuyDangKy(item.MaLichTruc)}
+                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
+                        >
+                          <FaTrash /> Hủy đăng ký
+                        </button>
+                      ))}
+                      {items.some(coTheNhuongHoanDoi) && coTheHoanDoi && (
                         <>
                           <button
-                            onClick={() => openHoanDoiModal('Nhuong', items.find((i) => i.TrangThai === 'Đã duyệt')?.MaLichTruc)}
+                            onClick={() => openHoanDoiModal('Nhuong', items.find(coTheNhuongHoanDoi)?.MaLichTruc)}
                             className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
                           >
                             <FaHandPaper /> Nhượng
                           </button>
                           <button
-                            onClick={() => openHoanDoiModal('HoanDoi', items.find((i) => i.TrangThai === 'Đã duyệt')?.MaLichTruc)}
+                            onClick={() => openHoanDoiModal('HoanDoi', items.find(coTheNhuongHoanDoi)?.MaLichTruc)}
                             className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
                           >
                             <FaExchangeAlt /> Hoán đổi
@@ -470,7 +510,7 @@ export default function BacSi(){
                           <span>Hủy</span>
                         </button>
                       )}
-                      {row.TrangThai === 'Đã duyệt' && coTheHoanDoi && (
+                      {row.TrangThai === 'Đã duyệt' && coTheHoanDoi && coTheNhuongHoanDoi(row) && (
                         <>
                           <button
                             onClick={() => openHoanDoiModal('Nhuong', row.MaLichTruc)}
@@ -488,6 +528,9 @@ export default function BacSi(){
                           </button>
                         </>
                       )}
+                      {row.TrangThai === 'Đã duyệt' && caDangChoHoanDoi.has(row.MaLichTruc) && (
+                        <span className="text-xs text-blue-600 font-medium">Đang có yêu cầu chờ xử lý</span>
+                      )}
                     </div>
                   )}
                 />
@@ -501,11 +544,11 @@ export default function BacSi(){
                   <FaExchangeAlt className="text-indigo-500" />
                   Yêu cầu gửi đi
                 </h3>
-                {yeuCauHoanDoi.filter((y) => y.MaBacSiGui === myMaBacSi).length === 0 ? (
+                {yeuCauGuiDi.length === 0 ? (
                   <p className="text-gray-500 text-sm text-center py-6">Chưa có yêu cầu gửi đi</p>
                 ) : (
                   <div className="space-y-3">
-                    {yeuCauHoanDoi.filter((y) => y.MaBacSiGui === myMaBacSi).map((yc) => (
+                    {yeuCauGuiDi.map((yc) => (
                       <div key={yc.MaYeuCau} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-sm text-gray-800">
@@ -522,7 +565,10 @@ export default function BacSi(){
                           </p>
                         )}
                         <p className="text-xs text-gray-600 mb-2">Gửi đến: {yc.TenBacSiNhan}</p>
-                        {yc.TrangThai === 'Chờ xác nhận' && (
+                        {yc.TrangThai === 'Chờ duyệt' && (
+                          <p className="text-xs text-blue-600 mb-2">Đối tác đã xác nhận — chờ admin duyệt (lịch chưa đổi)</p>
+                        )}
+                        {['Chờ xác nhận', 'Chờ duyệt'].includes(yc.TrangThai) && (
                           <button onClick={() => handleHuyYeuCau(yc.MaYeuCau)} className="text-xs text-red-600 hover:text-red-700 font-medium">
                             Hủy yêu cầu
                           </button>
@@ -538,12 +584,17 @@ export default function BacSi(){
                   <FaUsers className="text-blue-500" />
                   Yêu cầu nhận được
                 </h3>
-                {yeuCauHoanDoi.filter((y) => y.MaBacSiNhan === myMaBacSi && y.TrangThai === 'Chờ xác nhận').length === 0 ? (
-                  <p className="text-gray-500 text-sm text-center py-6">Không có yêu cầu chờ xác nhận</p>
+                {yeuCauNhanDuoc.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center py-6">Chưa có yêu cầu nhận được</p>
                 ) : (
                   <div className="space-y-3">
-                    {yeuCauHoanDoi.filter((y) => y.MaBacSiNhan === myMaBacSi && y.TrangThai === 'Chờ xác nhận').map((yc) => (
-                      <div key={yc.MaYeuCau} className="border border-blue-200 bg-blue-50 rounded-lg p-4">
+                    {yeuCauNhanDuoc.map((yc) => (
+                      <div
+                        key={yc.MaYeuCau}
+                        className={`border rounded-lg p-4 ${
+                          yc.TrangThai === 'Chờ xác nhận' ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
+                        }`}
+                      >
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-sm text-gray-800">
                             {yc.LoaiYeuCau === 'Nhuong' ? 'Nhận ca trực' : 'Hoán đổi ca'}
@@ -560,20 +611,28 @@ export default function BacSi(){
                           </p>
                         )}
                         {yc.GhiChu && <p className="text-xs text-gray-500 mb-2 italic">{yc.GhiChu}</p>}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleXacNhanYeuCau(yc.MaYeuCau)}
-                            className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
-                          >
-                            <FaCheck /> Xác nhận
-                          </button>
-                          <button
-                            onClick={() => handleTuChoiYeuCau(yc.MaYeuCau)}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
-                          >
-                            <FaTimes /> Từ chối
-                          </button>
-                        </div>
+                        {yc.TrangThai === 'Chờ duyệt' && (
+                          <p className="text-xs text-blue-600 mb-2">Bạn đã xác nhận — chờ admin duyệt (lịch chưa đổi)</p>
+                        )}
+                        {yc.TrangThai === 'Đã duyệt' && (
+                          <p className="text-xs text-green-600 mb-2">Đã duyệt — lịch trực đã được cập nhật</p>
+                        )}
+                        {yc.TrangThai === 'Chờ xác nhận' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleXacNhanYeuCau(yc.MaYeuCau)}
+                              className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
+                            >
+                              <FaCheck /> Xác nhận
+                            </button>
+                            <button
+                              onClick={() => handleTuChoiYeuCau(yc.MaYeuCau)}
+                              className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
+                            >
+                              <FaTimes /> Từ chối
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -581,7 +640,7 @@ export default function BacSi(){
               </div>
             </div>
 
-            <LichSuLichTrucPanel title="Lịch sử ca trực của tôi" />
+            <LichSuLichTrucPanel title="Lịch sử ca trực của tôi" refreshKey={lichSuRefreshKey} />
           </div>
         )}
 

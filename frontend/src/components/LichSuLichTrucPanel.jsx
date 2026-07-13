@@ -34,9 +34,9 @@ const ACTION_COLOR = {
 };
 
 /**
- * @param {{ maLichTruc?: number, title?: string, compact?: boolean }} props
+ * @param {{ maLichTruc?: number, title?: string, compact?: boolean, refreshKey?: number }} props
  */
-export default function LichSuLichTrucPanel({ maLichTruc, title = 'Lịch sử thay đổi', compact = false }) {
+export default function LichSuLichTrucPanel({ maLichTruc, title = 'Lịch sử thay đổi', compact = false, refreshKey = 0 }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +55,7 @@ export default function LichSuLichTrucPanel({ maLichTruc, title = 'Lịch sử t
       }
     })();
     return () => { cancelled = true; };
-  }, [maLichTruc]);
+  }, [maLichTruc, refreshKey]);
 
   return (
     <div className={compact ? '' : 'bg-white rounded-xl shadow-lg border border-gray-100 p-6'}>

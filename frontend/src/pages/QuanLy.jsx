@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import TableDanhSach from '../components/TableDanhSach';
 import MedicalRecord from '../components/MedicalRecord';
@@ -14,6 +15,7 @@ import { toast } from 'react-toastify';
 import { formatDateVN, toDateKey } from '../utils/date';
 
 export default function QuanLy(){
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [lich, setLich] = useState([]);
   const [users, setUsers] = useState([]);
@@ -29,6 +31,8 @@ export default function QuanLy(){
   const [showLichTrucModal, setShowLichTrucModal] = useState(false);
   const [editingLichTruc, setEditingLichTruc] = useState(null);
   const [oncallView, setOncallView] = useState('calendar');
+  const [hoanDoiFilter, setHoanDoiFilter] = useState('Chờ duyệt');
+  const [lichSuRefreshKey, setLichSuRefreshKey] = useState(0);
   const [lichTrucForm, setLichTrucForm] = useState({ MaBacSi: '', MaPhong: '', NgayTruc: '', CaTruc: 'Sáng', GhiChu: '' });
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [doctorForm, setDoctorForm] = useState({ hoTen: '', chuyenKhoa: '', bacSiCode: '', sdt: '', email: '' });
@@ -37,6 +41,21 @@ export default function QuanLy(){
 
   useEffect(() => {
     loadAllData();
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.openTab === 'oncall') {
+      setActiveTab('oncall');
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const onOpen = () => {
+      setActiveTab('oncall');
+      loadAllData();
+    };
+    window.addEventListener('app:open-oncall', onOpen);
+    return () => window.removeEventListener('app:open-oncall', onOpen);
   }, []);
 
   const loadAllData = async () => {
@@ -60,6 +79,7 @@ export default function QuanLy(){
       setLichTruc(lichTrucRes.data);
       setPhongKham(phongRes.data);
       setYeuCauHoanDoi(hoanDoiRes.data);
+      setLichSuRefreshKey((k) => k + 1);
     } catch(e) {
       console.error('Error loading data:', e);
       toast.error('Không thể tải dữ liệu');
@@ -179,7 +199,11 @@ export default function QuanLy(){
     try {
       setUpdating(`hd-${id}`);
       await api.put(`/hoandoi/${id}/trangthai`, { TrangThai: trangThai });
-      toast.success(trangThai === 'Đã duyệt' ? 'Đã duyệt yêu cầu hoán đổi/nhượng ca' : 'Đã từ chối yêu cầu');
+      toast.success(
+        trangThai === 'Đã duyệt'
+          ? 'Đã duyệt — lịch trực của hai bác sĩ đã được cập nhật'
+          : 'Đã từ chối yêu cầu'
+      );
       await loadAllData();
     } catch(err) {
       toast.error(err?.response?.data?.message || 'Cập nhật thất bại');
@@ -279,6 +303,10 @@ export default function QuanLy(){
     .slice(0, 6);
 
   const lichTrucChoDuyet = lichTruc.filter((lt) => lt.TrangThai === 'Chờ duyệt');
+  const hoanDoiChoDuyetCount = yeuCauHoanDoi.filter((y) => y.TrangThai === 'Chờ duyệt').length;
+  const yeuCauHoanDoiFiltered = hoanDoiFilter === 'Tất cả'
+    ? yeuCauHoanDoi
+    : yeuCauHoanDoi.filter((y) => y.TrangThai === hoanDoiFilter);
 
   const getCaTrucBadge = (ca) => {
     const map = {
@@ -992,24 +1020,27 @@ export default function QuanLy(){
                 showDoctor={true}
                 onSelectItem={(item) => handleEditLichTruc(item)}
                 renderDayActions={(items) => (
-                  <div className="flex gap-2 flex-wrap">
-                    {items.filter((i) => i.TrangThai === 'Chờ duyệt').slice(0, 1).map((item) => (
-                      <React.Fragment key={item.MaLichTruc}>
+                  <div className="flex flex-col gap-2">
+                    {items.filter((i) => i.TrangThai === 'Chờ duyệt').map((item) => (
+                      <div key={item.MaLichTruc} className="flex gap-2 flex-wrap items-center">
+                        <span className="text-[10px] text-gray-600 font-medium truncate max-w-[120px]">
+                          {item.TenBacSi || `#${item.MaLichTruc}`} · {item.CaTruc}
+                        </span>
                         <button
-                          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+                          className="px-2.5 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
                           disabled={updating === item.MaLichTruc}
                           onClick={() => updateLichTrucStatus(item.MaLichTruc, 'Đã duyệt')}
                         >
                           <FaCheckCircle /> Duyệt
                         </button>
                         <button
-                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+                          className="px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
                           disabled={updating === item.MaLichTruc}
                           onClick={() => updateLichTrucStatus(item.MaLichTruc, 'Từ chối')}
                         >
                           <FaTimesCircle /> Từ chối
                         </button>
-                      </React.Fragment>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -1075,16 +1106,41 @@ export default function QuanLy(){
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-200/20 to-purple-200/20 rounded-full -mr-48 -mt-48"></div>
             <div className="relative z-10">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6 flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <FaExchangeAlt className="text-white text-xl" />
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <FaExchangeAlt className="text-white text-xl" />
+                  </div>
+                  Yêu cầu hoán đổi / nhượng ca
+                  {hoanDoiChoDuyetCount > 0 && (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                      {hoanDoiChoDuyetCount} chờ duyệt
+                    </span>
+                  )}
+                </h2>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Chờ duyệt', 'Chờ xác nhận', 'Đã duyệt', 'Từ chối', 'Hủy', 'Tất cả'].map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setHoanDoiFilter(f)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        hoanDoiFilter === f
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
                 </div>
-                Yêu cầu hoán đổi / nhượng ca
-              </h2>
+              </div>
               {loading ? (
                 <div className="text-center py-8 text-gray-500">Đang tải...</div>
-              ) : yeuCauHoanDoi.filter(y => y.TrangThai === 'Chờ duyệt').length === 0 ? (
-                <p className="text-center text-gray-500 py-8">Không có yêu cầu chờ duyệt</p>
+              ) : yeuCauHoanDoiFiltered.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  {hoanDoiFilter === 'Tất cả' ? 'Chưa có yêu cầu nào' : `Không có yêu cầu ở trạng thái "${hoanDoiFilter}"`}
+                </p>
               ) : (
                 <TableDanhSach
                   columns={[
@@ -1101,23 +1157,29 @@ export default function QuanLy(){
                     { key:'TrangThai', title:'Trạng thái', render: r => getStatusBadge(r.TrangThai) },
                     { key:'GhiChu', title:'Ghi chú', render: r => r.GhiChu || '-' }
                   ]}
-                  data={yeuCauHoanDoi.filter(y => y.TrangThai === 'Chờ duyệt')}
+                  data={yeuCauHoanDoiFiltered}
                   actions={(row) => (
                     <div className="flex gap-2">
-                      <button
-                        className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium flex items-center gap-1 disabled:opacity-50"
-                        disabled={updating === `hd-${row.MaYeuCau}`}
-                        onClick={() => updateHoanDoiStatus(row.MaYeuCau, 'Đã duyệt')}
-                      >
-                        <FaCheckCircle /><span>Duyệt</span>
-                      </button>
-                      <button
-                        className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-1 disabled:opacity-50"
-                        disabled={updating === `hd-${row.MaYeuCau}`}
-                        onClick={() => updateHoanDoiStatus(row.MaYeuCau, 'Từ chối')}
-                      >
-                        <FaTimesCircle /><span>Từ chối</span>
-                      </button>
+                      {row.TrangThai === 'Chờ duyệt' ? (
+                        <>
+                          <button
+                            className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium flex items-center gap-1 disabled:opacity-50"
+                            disabled={updating === `hd-${row.MaYeuCau}`}
+                            onClick={() => updateHoanDoiStatus(row.MaYeuCau, 'Đã duyệt')}
+                          >
+                            <FaCheckCircle /><span>Duyệt</span>
+                          </button>
+                          <button
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-1 disabled:opacity-50"
+                            disabled={updating === `hd-${row.MaYeuCau}`}
+                            onClick={() => updateHoanDoiStatus(row.MaYeuCau, 'Từ chối')}
+                          >
+                            <FaTimesCircle /><span>Từ chối</span>
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </div>
                   )}
                 />
@@ -1126,7 +1188,7 @@ export default function QuanLy(){
           </div>
 
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6">
-            <LichSuLichTrucPanel title="Lịch sử thay đổi lịch trực" compact />
+            <LichSuLichTrucPanel title="Lịch sử thay đổi lịch trực" compact refreshKey={lichSuRefreshKey} />
           </div>
           </div>
         )}
