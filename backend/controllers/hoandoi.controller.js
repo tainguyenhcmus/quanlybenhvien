@@ -44,7 +44,8 @@ async function layTheoBacSi(req, res) {
 
 async function kiemTraCaHopLe(maLichTruc, maBacSi) {
   const [rows] = await pool.execute(
-    `SELECT MaLichTruc, MaBacSi, NgayTruc, TrangThai FROM LichTruc
+    `SELECT MaLichTruc, MaBacSi, DATE_FORMAT(NgayTruc, '%Y-%m-%d') AS NgayTruc, CaTruc, TrangThai
+     FROM LichTruc
      WHERE MaLichTruc = ? AND MaBacSi = ? AND TrangThai = 'Đã duyệt' AND NgayTruc >= CURDATE()`,
     [maLichTruc, maBacSi]
   );
@@ -81,7 +82,7 @@ async function coXungDotCa(db, maBacSi, ngayTruc, caTruc, excludeMaLichTruc = nu
      WHERE MaBacSi = ? AND NgayTruc = ? AND CaTruc = ?
        AND TrangThai IN ('Đã duyệt', 'Chờ duyệt')
        AND (? IS NULL OR MaLichTruc != ?)`,
-    [maBacSi, ngayTruc, caTruc, excludeMaLichTruc, excludeMaLichTruc]
+    [maBacSi, ngayTruc, caTruc, excludeMaLichTruc ?? null, excludeMaLichTruc ?? null]
   );
   return rows.length > 0;
 }
