@@ -6,10 +6,16 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "start:cloud": "ENV_FILE=.env.cloud node server.js",
+    "dev:cloud": "ENV_FILE=.env.cloud nodemon server.js",
     "migrate:lichtruc": "node scripts/migrate-lichtruc.js",
     "migrate:hoandoi": "node scripts/migrate-hoandoi.js",
     "migrate:thongbao": "node scripts/migrate-thongbao-lichsu.js",
+    "migrate:lichtruc:cloud": "ENV_FILE=.env.cloud node scripts/migrate-lichtruc.js",
+    "migrate:hoandoi:cloud": "ENV_FILE=.env.cloud node scripts/migrate-hoandoi.js",
+    "migrate:thongbao:cloud": "ENV_FILE=.env.cloud node scripts/migrate-thongbao-lichsu.js",
     "seed:bacsi": "node scripts/seed-bacsi-khoa.js",
+    "seed:bacsi:cloud": "ENV_FILE=.env.cloud node scripts/seed-bacsi-khoa.js",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {

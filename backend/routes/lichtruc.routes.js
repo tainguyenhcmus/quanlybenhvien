@@ -3,6 +3,7 @@ const router = express.Router();
 const auth = require('../middleware/auth.middleware');
 const permit = require('../middleware/role.middleware');
 const controller = require('../controllers/lichtruc.controller');
+const aiController = require('../controllers/lichtrucAi.controller');
 const pool = require('../db');
 
 /**
@@ -10,6 +11,11 @@ const pool = require('../db');
  * - Admin (MaChucVu=1): xem/sửa/xóa/duyệt mọi lịch trực
  * - Bác sĩ (MaChucVu=2): xem lịch trực của mình, đăng ký ca trực mới
  */
+
+/** AI tổng quan + chat (admin) — đăng ký trước các route tham số */
+router.get('/ai/tong-quan', auth, permit(1), aiController.tongQuan);
+router.post('/ai/chat', auth, permit(1), aiController.chat);
+router.post('/ai/apply', auth, permit(1), aiController.applyDraft);
 
 /** GET /api/lichtruc/ca-doi -> bác sĩ xem ca trực cùng khoa (để hoán đổi) */
 router.get('/ca-doi', auth, permit(2), async (req, res) => {

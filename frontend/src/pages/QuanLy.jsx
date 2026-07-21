@@ -5,6 +5,7 @@ import TableDanhSach from '../components/TableDanhSach';
 import MedicalRecord from '../components/MedicalRecord';
 import CalendarLichTruc from '../components/CalendarLichTruc';
 import LichSuLichTrucPanel from '../components/LichSuLichTrucPanel';
+import AiTongQuanLichTruc from '../components/AiTongQuanLichTruc';
 import { 
   FaShieldAlt, FaCalendarAlt, FaUsers, FaUserMd, FaCheckCircle, FaTimesCircle, 
   FaSync, FaChartLine, FaUser, FaHospital, FaEdit, FaTrash, FaPlus,
@@ -1027,6 +1028,12 @@ export default function QuanLy(){
 
         {activeTab === 'oncall' && (
           <div className="space-y-6">
+          <AiTongQuanLichTruc
+            doctors={doctors}
+            phongKham={phongKham}
+            onChanged={loadAllData}
+          />
+
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-orange-200/20 to-amber-200/20 rounded-full -mr-48 -mt-48"></div>
             <div className="relative z-10">

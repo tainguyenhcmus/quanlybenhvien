@@ -1,6 +1,6 @@
 // backend/db.js
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+require('./load-env');
 
 // Debug: Log environment variables (without sensitive data)
 console.log('🔍 Environment variables check:');

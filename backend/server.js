@@ -1,7 +1,7 @@
 // backend/server.js
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+require('./load-env');
 
 // KHÔNG require routes trước khi tạo app
 const app = express();
